@@ -22,15 +22,24 @@ public class TaskServiceImpl implements TaskService {
     private final TaskMapper taskMapper;
 
     @Override
-    public TaskResponse createTask(CreateTaskRequest request, Long clientId) {
-        // 1. Bazadan həmin ID-li useri tapırıq
-        User user = userRepository.findById(clientId)
+    public TaskResponse createTask(CreateTaskRequest request, String username) {
+        // 1. Bazadan ID ilə yox, token-dən gələn username ilə user-i tapırıq
+        User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("İstifadəçi tapılmadı!"));
+
+        // Biznes Qaydası Yoxlanışı (Eyni anda həm Tasker həm Client olmamaq şərti)
+        // Əgər bu user-in hal-hazırda icra etdiyi (Tasker olduğu) aktiv bir işi varsa, yeni task yarada bilməz
+        boolean isAlreadyTasker = taskRepository.existsByTaskerAndStatusIn(user, List.of(TaskStatus.IN_PROGRESS));
+        if (isAlreadyTasker) {
+            throw new RuntimeException("Aktiv icra etdiyiniz iş var! Bitmədən yeni task yarada bilməzsiniz.");
+        }
+
         // 2. Taskı yaradırıq və useri ona bağlayırıq
         Task task = taskMapper.toEntity(request);
 
-        task.setClient(user); // Bax bura əsas hissədir
-        task.setStatus(TaskStatus.PENDING);
+        task.setClient(user);
+        task.setStatus(TaskStatus.PENDING); // Bayaq düzəltdiyimiz default status
+
         return taskMapper.toResponse(taskRepository.save(task));
     }
 

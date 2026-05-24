@@ -6,7 +6,7 @@ import com.example.taskmaxing.model.dto.response.TaskResponse;
 import java.util.List;
 
 public interface TaskService {
-    TaskResponse createTask(CreateTaskRequest request, Long clientId);
+    TaskResponse createTask(CreateTaskRequest request, String username);
 
 
     List<TaskResponse> getAllTasks();
