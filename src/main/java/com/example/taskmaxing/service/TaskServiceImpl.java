@@ -10,6 +10,7 @@ import com.example.taskmaxing.repository.TaskRepository;
 import com.example.taskmaxing.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -42,11 +43,24 @@ public class TaskServiceImpl implements TaskService {
 
         return taskMapper.toResponse(taskRepository.save(task));
     }
-
+    @Transactional(readOnly = true)
     @Override
     public List<TaskResponse> getAllTasks() {
         return taskRepository.findAll().stream()
                 .map(taskMapper::toResponse) // Hər bir task-ı DTO-ya çevirir
                 .toList();
     }
+    @Transactional(readOnly = true)
+    @Override
+    public List<TaskResponse> getAllOpenTasks() {
+        // 1. Bazadan icraçısı olmayan taskları çəkirik
+        List<Task> openTasks = taskRepository.findByTaskerIsNull();
+
+        // 2. Stream və mapper istifadə edərək Entity-ləri Response DTO-ya çeviririk
+        return openTasks.stream()
+                .map(taskMapper::toResponse)
+                .toList();
+    }
+
+
 }

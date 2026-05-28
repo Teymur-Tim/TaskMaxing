@@ -13,4 +13,7 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
     List<Task> findByClientId(Long clientId);
 
-    boolean existsByTaskerAndStatusIn(User tasker, List<TaskStatus> statuses);}
+    boolean existsByTaskerAndStatusIn(User tasker, List<TaskStatus> statuses);
+
+    List<Task> findByTaskerIsNull();
+}

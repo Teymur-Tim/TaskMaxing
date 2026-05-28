@@ -21,7 +21,7 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
-    private final UserDetailsService userDetailsService; // Spring-in istifadəçini tapması üçün
+    private final UserDetailsService userDetailsService;
 
     @Override
     protected void doFilterInternal(
@@ -30,37 +30,42 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
 
-        // 1. Əgər sorğu login və ya register-dirsə, filter heç bir token axtarmadan sorğunu növbəti mərhələyə buraxmalıdır!
-        if (request.getServletPath().contains("/users/login") || request.getServletPath().contains("/users/register")) {
+        String path = request.getServletPath();
+
+        // 1. Açıq endpointləri filter birbaşa növbəti mərhələyə buraxır
+        if (path.contains("/users/login") || path.contains("/users/register") || path.contains("/tasks/open-tasks")) {
             filterChain.doFilter(request, response);
-            return; // Çox vacibdir, metod burada dayanmalıdır!
+            return;
         }
 
         final String authHeader = request.getHeader("Authorization");
-        final String jwt;
-        final String username;
 
-        // 2. Əgər Authorization başlığı yoxdursa və ya Bearer ilə başlamırsa, yenə filteri keçib getsin (SecurityConfig özü qərar verəcək)
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        jwt = authHeader.substring(7);
-        username = jwtService.extractUsername(jwt); // Sənin metod adına uyğun dəyiş (extractUsername və ya getUserName)
+        // TƏHLÜKƏSİZLİK SEYFİ: Kodu try-catch içinə alırıq, amma daxili Dependency qoşmuruq
+        try {
+            String jwt = authHeader.substring(7);
+            String username = jwtService.extractUsername(jwt);
 
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
 
-            if (jwtService.isTokenValid(jwt, userDetails)) {
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.getAuthorities()
-                );
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                if (jwtService.isTokenValid(jwt, userDetails)) {
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities()
+                    );
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
             }
+        } catch (Exception e) {
+            // Spring-i çökdürməyən, sadəcə konsola xətanı çıxaran standart Java metodu
+            System.out.println("JWT filtrində token oxunarkən xəta baş verdi: " + e.getMessage());
         }
 
         filterChain.doFilter(request, response);

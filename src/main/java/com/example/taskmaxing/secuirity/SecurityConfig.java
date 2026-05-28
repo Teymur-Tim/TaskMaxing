@@ -34,7 +34,9 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable) // JWT üçün CSRF-i bağlayırıq
                 .authorizeHttpRequests(auth -> auth
                         // 1. Həm register, həm də login qapısını hamı üçün tam açırıq!
-                        .requestMatchers("/users/register", "/api/users/register", "/users/login").permitAll()
+                        .requestMatchers("/users/register", "/api/users/register", "/users/login").
+                        permitAll()
+                        .requestMatchers("/tasks/**").permitAll()
                         // 2. Qalan bütün sorğular mütləq token tələb edir!
                         .anyRequest().authenticated()
                 )
