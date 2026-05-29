@@ -39,6 +39,16 @@ public class TaskController {
         return ResponseEntity.ok(taskService.getAllOpenTasks());
     }
 
+    @PutMapping("/{id}/assign")
+    public ResponseEntity<TaskResponse> assignTask(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        String currentUsername = authentication.getName();
+        TaskResponse response = taskService.assignTask(id, currentUsername);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/alltasks")
     public ResponseEntity<List<TaskResponse>> getAllTasks() {
         return ResponseEntity.ok(taskService.getAllTasks());

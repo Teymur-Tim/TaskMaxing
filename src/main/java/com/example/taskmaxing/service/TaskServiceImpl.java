@@ -50,6 +50,29 @@ public class TaskServiceImpl implements TaskService {
                 .map(taskMapper::toResponse) // Hər bir task-ı DTO-ya çevirir
                 .toList();
     }
+    @Transactional
+    @Override
+    public TaskResponse assignTask(Long taskId, String username) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new RuntimeException("Tapşırıq tapılmadı! ID: " + taskId));
+
+        User tasker = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("İstifadəçi tapılmadı: " + username));
+
+        if (task.getTasker() != null) {
+            throw new RuntimeException("Bu tapşırıq artıq götürülüb!");
+        }
+
+        if (task.getClient().getId().equals(tasker.getId())) {
+            throw new RuntimeException("Öz yaratdığınız tapşırığı icraçı kimi qəbul edə bilməzsiniz!");
+        }
+
+        task.setTasker(tasker);
+        task.setStatus(TaskStatus.IN_PROGRESS);
+
+        return taskMapper.toResponse(taskRepository.save(task));
+    }
+
     @Transactional(readOnly = true)
     @Override
     public List<TaskResponse> getAllOpenTasks() {

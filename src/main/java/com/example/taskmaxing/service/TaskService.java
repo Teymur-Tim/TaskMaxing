@@ -10,4 +10,6 @@ public interface TaskService {
 
     List<TaskResponse> getAllOpenTasks();
     List<TaskResponse> getAllTasks();
+
+    TaskResponse assignTask(Long taskId, String username);
 }
