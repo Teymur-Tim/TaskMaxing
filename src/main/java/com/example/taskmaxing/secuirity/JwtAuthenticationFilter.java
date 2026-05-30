@@ -33,7 +33,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String path = request.getServletPath();
 
         // 1. Açıq endpointləri filter birbaşa növbəti mərhələyə buraxır
-        if (path.contains("/users/login") || path.contains("/users/register") || path.contains("/tasks/open-tasks")) {
+        if (path.contains("/users/login") || path.contains("/users/register") || path.contains("/users/refresh")) {
             filterChain.doFilter(request, response);
             return;
         }

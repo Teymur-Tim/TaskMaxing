@@ -2,6 +2,7 @@ package com.example.taskmaxing.controller;
 
 import com.example.taskmaxing.model.dto.request.CreateUserRequest;
 import com.example.taskmaxing.model.dto.request.LoginRequest;
+import com.example.taskmaxing.model.dto.request.TokenRefreshRequest;
 import com.example.taskmaxing.model.dto.response.AuthResponse;
 import com.example.taskmaxing.model.dto.response.UserResponse;
 import com.example.taskmaxing.repository.UserRepository;
@@ -18,16 +19,20 @@ public class UserController {
 
     private final UserRepository userRepository;
     private final UserService userService;
-    private final AuthService authService; // Əgər login məntiqi AuthService-dədirsə, bunu inject elə
+    private final AuthService authService;
 
     @PostMapping("/register")
     public ResponseEntity<UserResponse> register(@RequestBody CreateUserRequest request) {
         return ResponseEntity.ok(userService.createUser(request));
     }
 
-    // BAX BU METODU ƏLAVƏ ETMƏLISƏN:
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<AuthResponse> refresh(@RequestBody TokenRefreshRequest request) {
+        return ResponseEntity.ok(authService.refresh(request));
     }
 }

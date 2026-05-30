@@ -31,12 +31,13 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+
                 .csrf(AbstractHttpConfigurer::disable) // JWT üçün CSRF-i bağlayırıq
                 .authorizeHttpRequests(auth -> auth
                         // 1. Həm register, həm də login qapısını hamı üçün tam açırıq!
-                        .requestMatchers("/users/register", "/api/users/register", "/users/login").
+                        .requestMatchers("/users/register", "/api/users/register", "/users/login", "/users/refresh", "/users/refresh-token").
                         permitAll()
-                        .requestMatchers("/tasks/**").permitAll()
+                        .requestMatchers("/tasks/**").authenticated()
                         // 2. Qalan bütün sorğular mütləq token tələb edir!
                         .anyRequest().authenticated()
                 )

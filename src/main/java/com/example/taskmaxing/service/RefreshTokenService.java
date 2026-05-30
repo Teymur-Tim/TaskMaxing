@@ -1,0 +1,51 @@
+package com.example.taskmaxing.service; // ÖZ PAKET ADINI YAZ (Məsələn: com.example.taskmaxing.service)
+import com.example.taskmaxing.model.entity.RefreshToken;
+
+import com.example.taskmaxing.repository.RefreshTokenRepository;
+import com.example.taskmaxing.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.util.Optional;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class RefreshTokenService {
+
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final UserRepository userRepository;
+
+    // 1. İstifadəçi üçün yeni bir Refresh Token yaradır (və ya köhnəsini yeniləyir)
+    @Transactional
+    public RefreshToken createRefreshToken(String username) {
+        var user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("İstifadəçi tapılmadı"));
+
+        // Eyni istifadəçinin köhnə tokeni varsa, bazadan silirik (təkrarlanma olmasın)
+        refreshTokenRepository.deleteByUser(user);
+
+        RefreshToken refreshToken = RefreshToken.builder()
+                .user(user)
+                .token(UUID.randomUUID().toString()) // Təhlükəsiz təsadüfi mətn (UUID)
+                .expiresAt(Instant.now().plusMillis(604800000)) // 7 Günlük ömür (milisaniyə ilə)
+                .build();
+
+        return refreshTokenRepository.save(refreshToken);
+    }
+
+    // 2. Tokenin vaxtının bitib-bitmədiyini yoxlayır
+    public RefreshToken verifyExpiration(RefreshToken token) {
+        if (token.getExpiresAt().isBefore(Instant.now())) {
+            refreshTokenRepository.delete(token);
+            throw new RuntimeException("Refresh tokenin vaxtı bitib. Zəhmət olmasa yenidən login olun!");
+        }
+        return token;
+    }
+
+    public Optional<RefreshToken> findByToken(String token) {
+        return refreshTokenRepository.findByToken(token);
+    }
+}
