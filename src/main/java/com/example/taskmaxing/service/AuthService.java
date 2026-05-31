@@ -1,5 +1,6 @@
 package com.example.taskmaxing.service;
 
+import com.example.taskmaxing.GlobalErroring.ResourceNotFoundException;
 import com.example.taskmaxing.model.dto.request.LoginRequest;
 import com.example.taskmaxing.model.dto.request.TokenRefreshRequest;
 import com.example.taskmaxing.model.dto.response.AuthResponse;
@@ -40,7 +41,7 @@ public class AuthService {
         );
 
         var user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("İstifadəçi tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("İstifadəçi tapılmadı"));
 
         // 1. 15 dəqiqəlik Access Token generastiya edirik
         String accessToken = jwtService.generateAccessToken(user);
@@ -70,7 +71,7 @@ public class AuthService {
                             .refreshToken(requestRefreshToken) // Mövcud refresh tokeni geri qaytarırıq
                             .build();
                 })
-                .orElseThrow(() -> new RuntimeException("Refresh token bazada tapılmadı!"));
+                .orElseThrow(() -> new ResourceNotFoundException("Refresh token bazada tapılmadı!"));
     }
 
     private String createRefreshToken(User user) {

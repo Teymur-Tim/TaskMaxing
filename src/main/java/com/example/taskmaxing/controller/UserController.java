@@ -8,8 +8,10 @@ import com.example.taskmaxing.model.dto.response.UserResponse;
 import com.example.taskmaxing.repository.UserRepository;
 import com.example.taskmaxing.service.AuthService;
 import com.example.taskmaxing.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -22,17 +24,24 @@ public class UserController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<UserResponse> register(@RequestBody CreateUserRequest request) {
+    public ResponseEntity<UserResponse> register(@Valid @RequestBody CreateUserRequest request) {
         return ResponseEntity.ok(userService.createUser(request));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
 
     @PostMapping("/refresh-token")
-    public ResponseEntity<AuthResponse> refresh(@RequestBody TokenRefreshRequest request) {
+    public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody TokenRefreshRequest request) {
         return ResponseEntity.ok(authService.refresh(request));
+    }
+
+    // Yalnız öz hesabını silə bilər (token-dəki istifadəçi). Soft delete olunur.
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> deleteMyAccount(Authentication authentication) {
+        userService.deleteAccount(authentication.getName());
+        return ResponseEntity.noContent().build();
     }
 }

@@ -1,5 +1,7 @@
 package com.example.taskmaxing.service;
 
+import com.example.taskmaxing.GlobalErroring.ConflictException;
+import com.example.taskmaxing.GlobalErroring.ResourceNotFoundException;
 import com.example.taskmaxing.mapper.TaskMapper;
 import com.example.taskmaxing.model.dto.request.CreateTaskRequest;
 import com.example.taskmaxing.model.dto.response.TaskResponse;
@@ -26,13 +28,13 @@ public class TaskServiceImpl implements TaskService {
     public TaskResponse createTask(CreateTaskRequest request, String username) {
         // 1. Bazadan ID ilə yox, token-dən gələn username ilə user-i tapırıq
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("İstifadəçi tapılmadı!"));
+                .orElseThrow(() -> new ResourceNotFoundException("İstifadəçi tapılmadı!"));
 
         // Biznes Qaydası Yoxlanışı (Eyni anda həm Tasker həm Client olmamaq şərti)
         // Əgər bu user-in hal-hazırda icra etdiyi (Tasker olduğu) aktiv bir işi varsa, yeni task yarada bilməz
         boolean isAlreadyTasker = taskRepository.existsByTaskerAndStatusIn(user, List.of(TaskStatus.IN_PROGRESS));
         if (isAlreadyTasker) {
-            throw new RuntimeException("Aktiv icra etdiyiniz iş var! Bitmədən yeni task yarada bilməzsiniz.");
+            throw new ConflictException("Aktiv icra etdiyiniz iş var! Bitmədən yeni task yarada bilməzsiniz.");
         }
 
         // 2. Taskı yaradırıq və useri ona bağlayırıq
@@ -54,17 +56,17 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public TaskResponse assignTask(Long taskId, String username) {
         Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new RuntimeException("Tapşırıq tapılmadı! ID: " + taskId));
+                .orElseThrow(() -> new ResourceNotFoundException("Tapşırıq tapılmadı! ID: " + taskId));
 
         User tasker = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("İstifadəçi tapılmadı: " + username));
+                .orElseThrow(() -> new ResourceNotFoundException("İstifadəçi tapılmadı: " + username));
 
         if (task.getTasker() != null) {
-            throw new RuntimeException("Bu tapşırıq artıq götürülüb!");
+            throw new ConflictException("Bu tapşırıq artıq götürülüb!");
         }
 
         if (task.getClient().getId().equals(tasker.getId())) {
-            throw new RuntimeException("Öz yaratdığınız tapşırığı icraçı kimi qəbul edə bilməzsiniz!");
+            throw new ConflictException("Öz yaratdığınız tapşırığı icraçı kimi qəbul edə bilməzsiniz!");
         }
 
         task.setTasker(tasker);

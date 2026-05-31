@@ -1,4 +1,6 @@
 package com.example.taskmaxing.service; // ÖZ PAKET ADINI YAZ (Məsələn: com.example.taskmaxing.service)
+import com.example.taskmaxing.GlobalErroring.ConflictException;
+import com.example.taskmaxing.GlobalErroring.ResourceNotFoundException;
 import com.example.taskmaxing.model.entity.RefreshToken;
 
 import com.example.taskmaxing.repository.RefreshTokenRepository;
@@ -22,7 +24,7 @@ public class RefreshTokenService {
     @Transactional
     public RefreshToken createRefreshToken(String username) {
         var user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("İstifadəçi tapılmadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("İstifadəçi tapılmadı"));
 
         // Eyni istifadəçinin köhnə tokeni varsa, bazadan silirik (təkrarlanma olmasın)
         refreshTokenRepository.deleteByUser(user);
@@ -40,7 +42,7 @@ public class RefreshTokenService {
     public RefreshToken verifyExpiration(RefreshToken token) {
         if (token.getExpiresAt().isBefore(Instant.now())) {
             refreshTokenRepository.delete(token);
-            throw new RuntimeException("Refresh tokenin vaxtı bitib. Zəhmət olmasa yenidən login olun!");
+            throw new ConflictException("Refresh tokenin vaxtı bitib. Zəhmət olmasa yenidən login olun!");
         }
         return token;
     }

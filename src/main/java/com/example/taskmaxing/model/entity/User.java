@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 
 import com.example.taskmaxing.model.enums.Role;
+import org.hibernate.annotations.SoftDelete;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,6 +20,9 @@ import java.util.stream.Collectors;
 @Table(name = "users")
 @NoArgsConstructor
 @AllArgsConstructor
+// Soft delete: user silinəndə bazadan getmir, "deleted" sütunu true olur.
+// Bütün sorğulara avtomatik "WHERE deleted = false" əlavə olunur (login, findByUsername və s.).
+@SoftDelete
 public class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,7 +38,8 @@ public class User implements UserDetails {
     private String bio;
     @Column(name = "karma_points")
     private Long karmaPoints = 0L;
-    @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    // CascadeType.ALL deyil: user soft-delete olunanda onun task-ları SİLİNMƏSİN, tarixçə qalsın.
+    @OneToMany(mappedBy = "client", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
     private List<Task> tasks = new ArrayList<>();
 //----------------------------------------------------
     @Override

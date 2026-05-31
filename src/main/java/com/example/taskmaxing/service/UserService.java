@@ -1,9 +1,12 @@
 package com.example.taskmaxing.service;
 
+import com.example.taskmaxing.GlobalErroring.ConflictException;
+import com.example.taskmaxing.GlobalErroring.ResourceNotFoundException;
 import com.example.taskmaxing.mapper.UserMapper;
 import com.example.taskmaxing.model.dto.request.CreateUserRequest;
 import com.example.taskmaxing.model.dto.response.UserResponse;
 import com.example.taskmaxing.model.entity.User;
+import com.example.taskmaxing.repository.RefreshTokenRepository;
 import com.example.taskmaxing.repository.UserRepository;
 import com.example.taskmaxing.secuirity.JwtService;
 import lombok.AccessLevel;
@@ -12,6 +15,7 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -22,8 +26,17 @@ public class UserService {
     private UserRepository userRepository;
     private UserMapper userMapper;
     private PasswordEncoder passwordEncoder;
+    private RefreshTokenRepository refreshTokenRepository;
 
     public UserResponse createUser(CreateUserRequest createUserRequest) {
+        // Bazaya yazmadan əvvəl təkrarlanmanı yoxlayırıq ki, xam DB xətası client-ə getməsin
+        if (userRepository.existsByUsername(createUserRequest.username())) {
+            throw new ConflictException("Bu istifadəçi adı artıq mövcuddur!");
+        }
+        if (userRepository.existsByEmail(createUserRequest.email())) {
+            throw new ConflictException("Bu email artıq qeydiyyatdan keçib!");
+        }
+
         User user = userMapper.toEntity(createUserRequest);
 
         // Əvvəlcə şifrəni hashləyib obyektə set edirik
@@ -33,5 +46,18 @@ public class UserService {
         User savedUser = userRepository.save(user);
 
         return userMapper.toResponse(savedUser);
+    }
+
+    // Hesabın soft-delete edilməsi: bazadan silinmir, @SoftDelete sayəsində "deleted = true" olur.
+    @Transactional
+    public void deleteAccount(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("İstifadəçi tapılmadı!"));
+
+        // Təhlükəsizlik: hesab bağlananda bütün aktiv refresh token-ləri ləğv edirik (real silinir).
+        refreshTokenRepository.deleteByUser(user);
+
+        // @SoftDelete sayəsində bu delete əslində "UPDATE users SET deleted = true" sorğusuna çevrilir.
+        userRepository.delete(user);
     }
 }
