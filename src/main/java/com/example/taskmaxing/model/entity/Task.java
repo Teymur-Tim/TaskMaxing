@@ -20,11 +20,13 @@ public class Task {
     @Enumerated(EnumType.STRING)
     private TaskStatus status;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    // EAGER olmalıdır: User @SoftDelete olduğu üçün Hibernate to-one əlaqəni LAZY saxlaya bilmir
+    // (silinib-silinmədiyini bilmək üçün entity-ni yükləməlidir).
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "client_id")
     private User client;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "tasker_id")
     private User tasker; // Bu işi qəbul edən / icra edən şəxs
 
