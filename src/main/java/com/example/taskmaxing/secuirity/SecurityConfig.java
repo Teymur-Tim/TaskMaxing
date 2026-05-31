@@ -34,11 +34,11 @@ public class SecurityConfig {
 
                 .csrf(AbstractHttpConfigurer::disable) // JWT üçün CSRF-i bağlayırıq
                 .authorizeHttpRequests(auth -> auth
-                        // 1. Həm register, həm də login qapısını hamı üçün tam açırıq!
-                        .requestMatchers("/users/register", "/api/users/register", "/users/login", "/users/refresh", "/users/refresh-token").
-                        permitAll()
+                        // 1. Yalnız real public endpointlər: register, login, refresh-token
+                        .requestMatchers("/users/register", "/users/login", "/users/refresh-token")
+                        .permitAll()
                         .requestMatchers("/tasks/**").authenticated()
-                        // 2. Qalan bütün sorğular mütləq token tələb edir!
+                        // 2. Qalan bütün sorğular mütləq token tələb edir! (məs: DELETE /users/me)
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

@@ -5,6 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,6 +18,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 @Component
+@Slf4j
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -64,8 +66,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
         } catch (Exception e) {
-            // Spring-i çökdürməyən, sadəcə konsola xətanı çıxaran standart Java metodu
-            System.out.println("JWT filtrində token oxunarkən xəta baş verdi: " + e.getMessage());
+            // Spring-i çökdürmürük; sadəcə log-a yazırıq (etibarsız/vaxtı keçmiş token = 403)
+            log.warn("JWT filtrində token oxunarkən xəta baş verdi: {}", e.getMessage());
         }
 
         filterChain.doFilter(request, response);
