@@ -7,5 +7,6 @@ public record TaskResponse(Long id,
                            String description,
                            BigDecimal budget,
                            String status,
-                           String clientName) {
+                           String clientName,
+                           String taskerName) {
 }

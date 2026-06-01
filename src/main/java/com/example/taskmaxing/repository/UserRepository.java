@@ -3,6 +3,7 @@ package com.example.taskmaxing.repository;
 import com.example.taskmaxing.model.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -14,5 +15,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByUsername(String username);
 
     boolean existsByEmail(String email);
+
+    // Leaderboard: ən çox karma toplayanlar yuxarıda (silinmiş user-lər @SoftDelete sayəsində avtomatik kənarda qalır)
+    List<User> findAllByOrderByKarmaPointsDesc();
 
 }

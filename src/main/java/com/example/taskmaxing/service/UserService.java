@@ -1,9 +1,12 @@
 package com.example.taskmaxing.service;
 
+import com.example.taskmaxing.GlobalErroring.BadRequestException;
 import com.example.taskmaxing.GlobalErroring.ConflictException;
 import com.example.taskmaxing.GlobalErroring.ResourceNotFoundException;
 import com.example.taskmaxing.mapper.UserMapper;
+import com.example.taskmaxing.model.dto.request.ChangePasswordRequest;
 import com.example.taskmaxing.model.dto.request.CreateUserRequest;
+import com.example.taskmaxing.model.dto.request.UpdateUserRequest;
 import com.example.taskmaxing.model.dto.response.UserResponse;
 import com.example.taskmaxing.model.entity.User;
 import com.example.taskmaxing.repository.RefreshTokenRepository;
@@ -16,6 +19,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -48,6 +53,54 @@ public class UserService {
         return userMapper.toResponse(savedUser);
     }
 
+    // Profil yenilənməsi: yalnız token-dəki istifadəçi öz məlumatlarını dəyişə bilər.
+    // Partial update — yalnız göndərilən (null olmayan) sahələr yenilənir.
+    @Transactional
+    public UserResponse updateProfile(String username, UpdateUserRequest request) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("İstifadəçi tapılmadı!"));
+
+        // username dəyişdirilirsə, başqasının istifadə etmədiyini yoxlayırıq
+        if (request.username() != null && !request.username().equals(user.getUsername())) {
+            if (userRepository.existsByUsername(request.username())) {
+                throw new ConflictException("Bu istifadəçi adı artıq mövcuddur!");
+            }
+            user.setUsername(request.username());
+        }
+
+        // email dəyişdirilirsə, başqasının istifadə etmədiyini yoxlayırıq
+        if (request.email() != null && !request.email().equals(user.getEmail())) {
+            if (userRepository.existsByEmail(request.email())) {
+                throw new ConflictException("Bu email artıq qeydiyyatdan keçib!");
+            }
+            user.setEmail(request.email());
+        }
+
+        if (request.bio() != null) {
+            user.setBio(request.bio());
+        }
+
+        return userMapper.toResponse(userRepository.save(user));
+    }
+
+    // Şifrə dəyişdirilməsi: əvvəlcə cari şifrə doğrulanır, sonra yeni şifrə hashlənib yazılır.
+    @Transactional
+    public void changePassword(String username, ChangePasswordRequest request) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("İstifadəçi tapılmadı!"));
+
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+            throw new BadRequestException("Cari şifrə yanlışdır!");
+        }
+
+        if (passwordEncoder.matches(request.newPassword(), user.getPassword())) {
+            throw new BadRequestException("Yeni şifrə cari şifrə ilə eyni ola bilməz!");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+    }
+
     // Hesabın soft-delete edilməsi: bazadan silinmir, @SoftDelete sayəsində "deleted = true" olur.
     @Transactional
     public void deleteAccount(String username) {
@@ -59,5 +112,13 @@ public class UserService {
 
         // @SoftDelete sayəsində bu delete əslində "UPDATE users SET deleted = true" sorğusuna çevrilir.
         userRepository.delete(user);
+    }
+
+    // Leaderboard: istifadəçiləri karma xalına görə azalan sıra ilə qaytarır.
+    @Transactional(readOnly = true)
+    public List<UserResponse> getLeaderboard() {
+        return userRepository.findAllByOrderByKarmaPointsDesc().stream()
+                .map(userMapper::toResponse)
+                .toList();
     }
 }

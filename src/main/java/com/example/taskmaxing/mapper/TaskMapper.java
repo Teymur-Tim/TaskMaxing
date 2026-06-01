@@ -11,6 +11,7 @@ import org.mapstruct.ReportingPolicy;
 public interface TaskMapper {
 
     @Mapping(source = "client.username", target = "clientName")
+    @Mapping(source = "tasker.username", target = "taskerName")
     TaskResponse toResponse(Task task);
 
     Task toEntity(CreateTaskRequest request);

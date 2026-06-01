@@ -42,17 +42,29 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.NOT_FOUND, "Not Found", ex.getMessage());
     }
 
+    // 400 - client səhv məlumat göndərdi (məs: cari şifrə yanlışdır)
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ErrorResponse> handleBadRequest(BadRequestException ex) {
+        return build(HttpStatus.BAD_REQUEST, "Bad Request", ex.getMessage());
+    }
+
+    // 403 - autentifikasiya olunub, amma bu əməliyyata icazəsi yoxdur
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ErrorResponse> handleForbidden(ForbiddenException ex) {
+        return build(HttpStatus.FORBIDDEN, "Forbidden", ex.getMessage());
+    }
+
     // 409 - biznes qaydası pozuldu (təkrar user, artıq götürülmüş task və s.)
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<ErrorResponse> handleConflict(ConflictException ex) {
         return build(HttpStatus.CONFLICT, "Conflict", ex.getMessage());
     }
 
-    // 409 - bazanın unikallıq məhdudiyyəti pozulanda (xam SQL mesajını gizlədirik)
+    // 409 - bazanın hər hansı məhdudiyyəti pozulanda (xam SQL mesajını gizlədirik)
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex) {
         return build(HttpStatus.CONFLICT, "Conflict",
-                "Məlumat bazası məhdudiyyəti pozuldu (təkrar dəyər ola bilər).");
+                "Məlumat bazası məhdudiyyəti pozuldu.");
     }
 
     // 401 - səhv istifadəçi adı və ya şifrə

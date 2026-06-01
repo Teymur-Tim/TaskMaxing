@@ -1,8 +1,10 @@
 package com.example.taskmaxing.controller;
 
+import com.example.taskmaxing.model.dto.request.ChangePasswordRequest;
 import com.example.taskmaxing.model.dto.request.CreateUserRequest;
 import com.example.taskmaxing.model.dto.request.LoginRequest;
 import com.example.taskmaxing.model.dto.request.TokenRefreshRequest;
+import com.example.taskmaxing.model.dto.request.UpdateUserRequest;
 import com.example.taskmaxing.model.dto.response.AuthResponse;
 import com.example.taskmaxing.model.dto.response.UserResponse;
 import com.example.taskmaxing.repository.UserRepository;
@@ -13,6 +15,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/users")
@@ -36,6 +40,31 @@ public class UserController {
     @PostMapping("/refresh-token")
     public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody TokenRefreshRequest request) {
         return ResponseEntity.ok(authService.refresh(request));
+    }
+
+    // Yalnız öz profilini yeniləyə bilər (token-dəki istifadəçi). Partial update.
+    @PutMapping("/me")
+    public ResponseEntity<UserResponse> updateMyProfile(
+            @Valid @RequestBody UpdateUserRequest request,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(userService.updateProfile(authentication.getName(), request));
+    }
+
+    // Şifrə dəyişdirilməsi: cari şifrə doğrulandıqdan sonra yeni şifrə yazılır.
+    @PutMapping("/me/password")
+    public ResponseEntity<Void> changePassword(
+            @Valid @RequestBody ChangePasswordRequest request,
+            Authentication authentication
+    ) {
+        userService.changePassword(authentication.getName(), request);
+        return ResponseEntity.noContent().build();
+    }
+
+    // Leaderboard: ən çox karma toplayan istifadəçilər (rating sıralaması)
+    @GetMapping("/leaderboard")
+    public ResponseEntity<List<UserResponse>> leaderboard() {
+        return ResponseEntity.ok(userService.getLeaderboard());
     }
 
     // Yalnız öz hesabını silə bilər (token-dəki istifadəçi). Soft delete olunur.

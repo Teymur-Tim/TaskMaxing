@@ -1,10 +1,12 @@
 package com.example.taskmaxing.controller;
 
 import com.example.taskmaxing.model.dto.request.CreateTaskRequest;
+import com.example.taskmaxing.model.dto.request.UpdateTaskRequest;
 import com.example.taskmaxing.model.dto.response.TaskResponse;
 import com.example.taskmaxing.model.entity.User;
 import com.example.taskmaxing.repository.UserRepository;
 import com.example.taskmaxing.service.TaskService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -52,6 +54,36 @@ public class TaskController {
     @GetMapping("/alltasks")
     public ResponseEntity<List<TaskResponse>> getAllTasks() {
         return ResponseEntity.ok(taskService.getAllTasks());
+    }
+
+    // Tapşırığı redaktə et: yalnız sahibi və yalnız PENDING statusunda olduqda
+    @PutMapping("/{id}")
+    public ResponseEntity<TaskResponse> updateTask(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateTaskRequest request,
+            Authentication authentication
+    ) {
+        String currentUsername = authentication.getName();
+        TaskResponse response = taskService.updateTask(id, request, currentUsername);
+        return ResponseEntity.ok(response);
+    }
+
+    // Tasker işi bitirdiyini bildirir → status COMPLETED (client təsdiqini gözləyir)
+    @PutMapping("/{id}/complete")
+    public ResponseEntity<TaskResponse> completeTask(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(taskService.completeTask(id, authentication.getName()));
+    }
+
+    // Client işi təsdiqləyir → status DONE + tasker karma qazanır
+    @PutMapping("/{id}/confirm")
+    public ResponseEntity<TaskResponse> confirmTask(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(taskService.confirmTask(id, authentication.getName()));
     }
 
 }

@@ -1,9 +1,10 @@
 package com.example.taskmaxing.model.enums;
 
 public enum TaskStatus {
-    PENDING,
+    PENDING,        // yaradılıb, hələ icraçı yoxdur
     ASSIGNED,
-    IN_PROGRESS,
-    COMPLETED,
+    IN_PROGRESS,    // icraçı götürüb, işləyir
+    COMPLETED,      // tasker "tamamladım" deyib, client təsdiqini gözləyir
+    DONE,           // client təsdiqləyib — iş bitdi, tasker karma qazandı
     CANCELLED
 }
