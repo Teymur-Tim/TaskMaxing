@@ -6,6 +6,7 @@ import com.example.taskmaxing.GlobalErroring.ResourceNotFoundException;
 import com.example.taskmaxing.mapper.TaskMapper;
 import com.example.taskmaxing.model.dto.request.CreateTaskRequest;
 import com.example.taskmaxing.model.dto.request.UpdateTaskRequest;
+import com.example.taskmaxing.model.dto.response.NearbyTaskResponse;
 import com.example.taskmaxing.model.dto.response.TaskResponse;
 import com.example.taskmaxing.model.entity.Task;
 import com.example.taskmaxing.model.entity.User;
@@ -16,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -24,6 +26,9 @@ public class TaskServiceImpl implements TaskService {
 
     // İş tam bitdikdə (client təsdiqi) tasker-ə verilən karma. İstənilən vaxt dəyişdirilə bilər.
     private static final long KARMA_REWARD = 10L;
+
+    // Yer kürəsinin orta radiusu (km) — Haversine məsafə hesablaması üçün
+    private static final double EARTH_RADIUS_KM = 6371.0;
 
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
@@ -106,6 +111,15 @@ public class TaskServiceImpl implements TaskService {
         if (request.budget() != null) {
             task.setBudget(request.budget());
         }
+        if (request.latitude() != null) {
+            task.setLatitude(request.latitude());
+        }
+        if (request.longitude() != null) {
+            task.setLongitude(request.longitude());
+        }
+        if (request.address() != null) {
+            task.setAddress(request.address());
+        }
 
         return taskMapper.toResponse(taskRepository.save(task));
     }
@@ -168,6 +182,37 @@ public class TaskServiceImpl implements TaskService {
         return openTasks.stream()
                 .map(taskMapper::toResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<NearbyTaskResponse> getNearbyOpenTasks(double latitude, double longitude, double radiusKm) {
+        return taskRepository.findByTaskerIsNull().stream()
+                // yalnız koordinatı olan açıq tapşırıqlar
+                .filter(t -> t.getLatitude() != null && t.getLongitude() != null)
+                // hər biri üçün məsafəni hesabla
+                .map(t -> {
+                    double distance = haversineKm(latitude, longitude, t.getLatitude(), t.getLongitude());
+                    // 2 onluğa yuvarlaqlaşdırırıq (məs: 2.34 km)
+                    double rounded = Math.round(distance * 100.0) / 100.0;
+                    return new NearbyTaskResponse(taskMapper.toResponse(t), rounded);
+                })
+                // radius xaricindəkiləri at
+                .filter(n -> n.distanceKm() <= radiusKm)
+                // ən yaxından ən uzağa sırala
+                .sorted(Comparator.comparingDouble(NearbyTaskResponse::distanceKm))
+                .toList();
+    }
+
+    // İki coğrafi nöqtə arasındakı məsafə (km) — Haversine düsturu
+    private double haversineKm(double lat1, double lon1, double lat2, double lon2) {
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return EARTH_RADIUS_KM * c;
     }
 
 

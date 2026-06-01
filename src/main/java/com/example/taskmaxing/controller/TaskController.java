@@ -2,6 +2,7 @@ package com.example.taskmaxing.controller;
 
 import com.example.taskmaxing.model.dto.request.CreateTaskRequest;
 import com.example.taskmaxing.model.dto.request.UpdateTaskRequest;
+import com.example.taskmaxing.model.dto.response.NearbyTaskResponse;
 import com.example.taskmaxing.model.dto.response.TaskResponse;
 import com.example.taskmaxing.model.entity.User;
 import com.example.taskmaxing.repository.UserRepository;
@@ -84,6 +85,16 @@ public class TaskController {
             Authentication authentication
     ) {
         return ResponseEntity.ok(taskService.confirmTask(id, authentication.getName()));
+    }
+
+    // Yaxınlıqdakı açıq tapşırıqlar: tasker öz yerini (lat,lng) verir, radius (km) opsionaldır
+    @GetMapping("/nearby")
+    public ResponseEntity<List<NearbyTaskResponse>> nearby(
+            @RequestParam double lat,
+            @RequestParam double lng,
+            @RequestParam(defaultValue = "10") double radiusKm
+    ) {
+        return ResponseEntity.ok(taskService.getNearbyOpenTasks(lat, lng, radiusKm));
     }
 
 }

@@ -8,5 +8,10 @@ public record TaskResponse(Long id,
                            BigDecimal budget,
                            String status,
                            String clientName,
-                           String taskerName) {
+                           String taskerName,
+                           Double latitude,
+                           Double longitude,
+                           String address,
+                           // Tasker düyməyə basanda birbaşa açılacaq Google Maps linki (hazır gəlir)
+                           String mapsUrl) {
 }
