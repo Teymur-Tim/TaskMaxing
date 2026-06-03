@@ -42,6 +42,12 @@ public class UserController {
         return ResponseEntity.ok(authService.refresh(request));
     }
 
+    // Cari istifadəçinin profili (token-dəki istifadəçi) — avatar/email/bio daxil.
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> getMyProfile(Authentication authentication) {
+        return ResponseEntity.ok(userService.getCurrentUser(authentication.getName()));
+    }
+
     // Yalnız öz profilini yeniləyə bilər (token-dəki istifadəçi). Partial update.
     @PutMapping("/me")
     public ResponseEntity<UserResponse> updateMyProfile(
@@ -65,6 +71,13 @@ public class UserController {
     @GetMapping("/leaderboard")
     public ResponseEntity<List<UserResponse>> leaderboard() {
         return ResponseEntity.ok(userService.getLeaderboard());
+    }
+
+    // Hər hansı istifadəçinin ictimai profili (email-siz). "me"/"leaderboard" kimi
+    // literal yollar daha spesifik olduğu üçün bu {username} onları kölgələmir.
+    @GetMapping("/{username}")
+    public ResponseEntity<UserResponse> publicProfile(@PathVariable String username) {
+        return ResponseEntity.ok(userService.getPublicProfile(username));
     }
 
     // Yalnız öz hesabını silə bilər (token-dəki istifadəçi). Soft delete olunur.

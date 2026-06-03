@@ -17,6 +17,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 
@@ -26,6 +28,12 @@ public class TaskServiceImpl implements TaskService {
 
     // İş tam bitdikdə (client təsdiqi) tasker-ə verilən karma. İstənilən vaxt dəyişdirilə bilər.
     private static final long KARMA_REWARD = 10L;
+
+    // Bir tasker eyni anda maksimum neçə aktiv iş götürə bilər (saxtakarlığın qarşısını alır).
+    private static final long MAX_ACTIVE_TASKS = 3L;
+
+    // Tasker tamamladıqdan sonra client bu müddət ərzində təsdiqləməsə, task silinir.
+    private static final Duration COMPLETED_TASK_TTL = Duration.ofDays(1);
 
     // Yer kürəsinin orta radiusu (km) — Haversine məsafə hesablaması üçün
     private static final double EARTH_RADIUS_KM = 6371.0;
@@ -77,6 +85,17 @@ public class TaskServiceImpl implements TaskService {
 
         if (task.getClient().getId().equals(tasker.getId())) {
             throw new ConflictException("Öz yaratdığınız tapşırığı icraçı kimi qəbul edə bilməzsiniz!");
+        }
+
+        // Saxtakarlığın qarşısını almaq üçün: eyni anda ən çox 3 aktiv iş götürmək olar.
+        // Aktiv = yalnız hazırda icra olunan (IN_PROGRESS). Tasker "tamamladım" deyən kimi
+        // (COMPLETED) slot boşalır ki, client təsdiqi gecikəndə belə yeni iş götürə bilsin.
+        long activeTasks = taskRepository.countByTaskerAndStatusIn(
+                tasker, List.of(TaskStatus.IN_PROGRESS));
+        if (activeTasks >= MAX_ACTIVE_TASKS) {
+            throw new ConflictException(
+                    "Eyni anda ən çox " + MAX_ACTIVE_TASKS + " tapşırıq götürə bilərsiniz! " +
+                    "Əvvəlcə mövcud tapşırıqlarınızı tamamlayın.");
         }
 
         task.setTasker(tasker);
@@ -140,8 +159,10 @@ public class TaskServiceImpl implements TaskService {
             throw new ConflictException("Yalnız icrada (IN_PROGRESS) olan tapşırığı tamamlamaq olar!");
         }
 
-        // Karma hələ verilmir — client təsdiqini gözləyirik
+        // Karma hələ verilmir — client təsdiqini gözləyirik.
+        // Tamamlanma anını qeyd edirik ki, təsdiq gecikərsə avtomatik silinə bilsin.
         task.setStatus(TaskStatus.COMPLETED);
+        task.setCompletedAt(Instant.now());
         return taskMapper.toResponse(taskRepository.save(task));
     }
 
@@ -170,6 +191,62 @@ public class TaskServiceImpl implements TaskService {
         userRepository.save(tasker);
 
         return taskMapper.toResponse(taskRepository.save(task));
+    }
+
+    @Transactional
+    @Override
+    public TaskResponse cancelTask(Long taskId, String username) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tapşırıq tapılmadı! ID: " + taskId));
+
+        // Yalnız işi götürən (tasker) ondan imtina edə bilər
+        if (task.getTasker() == null || !task.getTasker().getUsername().equals(username)) {
+            throw new ForbiddenException("Yalnız tapşırığı götürən (tasker) ondan imtina edə bilər!");
+        }
+
+        // Yalnız icrada olan işdən imtina etmək olar (tamamlandıqdan/təsdiqləndikdən sonra yox)
+        if (task.getStatus() != TaskStatus.IN_PROGRESS) {
+            throw new ConflictException("Yalnız icrada (IN_PROGRESS) olan tapşırıqdan imtina etmək olar!");
+        }
+
+        // İmtina: tapşırıq icraçısız qalır və yenidən açıq (PENDING) olur ki, başqası götürə bilsin
+        task.setTasker(null);
+        task.setStatus(TaskStatus.PENDING);
+        return taskMapper.toResponse(taskRepository.save(task));
+    }
+
+    @Transactional
+    @Override
+    public void deleteTask(Long taskId, String username) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException("Tapşırıq tapılmadı! ID: " + taskId));
+
+        // Yalnız tapşırığı yaradan (client) onu silə bilər
+        if (!task.getClient().getUsername().equals(username)) {
+            throw new ForbiddenException("Yalnız öz tapşırığınızı silə bilərsiniz!");
+        }
+
+        // Yalnız hələ icraya başlanmamış (PENDING) və ya ləğv edilmiş (CANCELLED) tapşırığı
+        // silmək olar. İcrada olan (IN_PROGRESS/COMPLETED) və ya bitmiş (DONE — rəyləri saxlayır)
+        // tapşırıqlar silinmir.
+        if (task.getStatus() != TaskStatus.PENDING && task.getStatus() != TaskStatus.CANCELLED) {
+            throw new ConflictException(
+                    "Yalnız hələ icraya başlanmamış (PENDING) və ya ləğv edilmiş tapşırığı silmək olar! " +
+                    "İcrada olan iş üçün icraçı imtina etməli, bitmiş iş isə tarixçə kimi qalır.");
+        }
+
+        taskRepository.delete(task);
+    }
+
+    @Transactional
+    @Override
+    public void deleteStaleCompletedTasks() {
+        // Tasker tamamlayıb, amma client TTL müddətində təsdiqləməyib → tapşırığı silirik.
+        Instant cutoff = Instant.now().minus(COMPLETED_TASK_TTL);
+        List<Task> stale = taskRepository.findByStatusAndCompletedAtBefore(TaskStatus.COMPLETED, cutoff);
+        if (!stale.isEmpty()) {
+            taskRepository.deleteAll(stale);
+        }
     }
 
     @Transactional(readOnly = true)

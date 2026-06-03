@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 
 @Entity
 @Data
@@ -19,6 +20,10 @@ public class Task {
 
     @Enumerated(EnumType.STRING)
     private TaskStatus status;
+
+    // Tasker "tamamladım" dediyi an. Client 1 gün ərzində təsdiqləməsə,
+    // planlaşdırılmış iş bu tapşırığı avtomatik silir (yeri boş yerə tutmasın).
+    private Instant completedAt;
 
     // GPS məlumatı (xəritə kitabxanası yox, sadəcə saxlanılır və Google Maps linki üçün istifadə olunur)
     private Double latitude;

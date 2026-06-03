@@ -41,6 +41,10 @@ public class UserService {
         if (userRepository.existsByEmail(createUserRequest.email())) {
             throw new ConflictException("Bu email artıq qeydiyyatdan keçib!");
         }
+        // Bir nömrə ilə yalnız bir hesab: təkrar nömrə ilə qeydiyyatın qarşısını alırıq.
+        if (userRepository.existsByPhoneNumber(createUserRequest.phoneNumber())) {
+            throw new ConflictException("Bu telefon nömrəsi artıq qeydiyyatdan keçib!");
+        }
 
         User user = userMapper.toEntity(createUserRequest);
 
@@ -80,7 +84,39 @@ public class UserService {
             user.setBio(request.bio());
         }
 
+        // Profil şəkli: "" göndərilərsə şəkil silinir, null isə toxunulmur.
+        if (request.avatar() != null) {
+            user.setAvatar(request.avatar().isBlank() ? null : request.avatar());
+        }
+
+        // Telefon nömrəsinin görünürlüyü (gizlət/göstər) — yalnız göndərildikdə dəyişir.
+        if (request.phoneVisible() != null) {
+            user.setPhoneVisible(request.phoneVisible());
+        }
+
         return userMapper.toResponse(userRepository.save(user));
+    }
+
+    // Cari istifadəçinin profil məlumatları (token-dəki istifadəçi).
+    @Transactional(readOnly = true)
+    public UserResponse getCurrentUser(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("İstifadəçi tapılmadı!"));
+        return userMapper.toResponse(user);
+    }
+
+    // Hər hansı istifadəçinin ictimai profili (başqasının reytinqinə/bio-suna baxmaq üçün).
+    // Email gizli saxlanılır — yalnız ad, bio, avatar, karma və reytinq qaytarılır.
+    @Transactional(readOnly = true)
+    public UserResponse getPublicProfile(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("İstifadəçi tapılmadı: " + username));
+        UserResponse full = userMapper.toResponse(user);
+        // email həmişə gizli; telefon nömrəsi isə yalnız istifadəçi gizlətməyibsə (phoneVisible) göstərilir.
+        String publicPhone = user.isPhoneVisible() ? full.phoneNumber() : null;
+        return new UserResponse(
+                full.id(), full.username(), null, publicPhone, full.phoneVisible(), full.bio(),
+                full.karmaPoints(), full.avatar(), full.ratingAverage(), full.ratingCount());
     }
 
     // Şifrə dəyişdirilməsi: əvvəlcə cari şifrə doğrulanır, sonra yeni şifrə hashlənib yazılır.

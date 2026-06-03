@@ -16,6 +16,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     boolean existsByEmail(String email);
 
+    boolean existsByPhoneNumber(String phoneNumber);
+
     // Leaderboard: ən çox karma toplayanlar yuxarıda (silinmiş user-lər @SoftDelete sayəsində avtomatik kənarda qalır)
     List<User> findAllByOrderByKarmaPointsDesc();
 

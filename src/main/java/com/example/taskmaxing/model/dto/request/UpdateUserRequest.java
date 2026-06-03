@@ -9,5 +9,9 @@ public record UpdateUserRequest(
         String username,
         @Email(message = "Email formatı yanlışdır!")
         String email,
-        String bio
+        String bio,
+        // Profil şəkli (base64 data URL). Boş sətir "" göndərilərsə şəkil silinir.
+        String avatar,
+        // Telefon nömrəsinin ictimai profildə görünməsi (true=göstər, false=gizlət).
+        Boolean phoneVisible
 ) { }

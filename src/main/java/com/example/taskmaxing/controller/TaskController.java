@@ -87,6 +87,25 @@ public class TaskController {
         return ResponseEntity.ok(taskService.confirmTask(id, authentication.getName()));
     }
 
+    // Tasker götürdüyü işdən imtina edir → tapşırıq yenidən açıq (PENDING) olur
+    @PutMapping("/{id}/cancel")
+    public ResponseEntity<TaskResponse> cancelTask(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        return ResponseEntity.ok(taskService.cancelTask(id, authentication.getName()));
+    }
+
+    // Client öz tapşırığını silir (icraçı aktiv işləmədiyi halda)
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTask(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        taskService.deleteTask(id, authentication.getName());
+        return ResponseEntity.noContent().build();
+    }
+
     // Yaxınlıqdakı açıq tapşırıqlar: tasker öz yerini (lat,lng) verir, radius (km) opsionaldır
     @GetMapping("/nearby")
     public ResponseEntity<List<NearbyTaskResponse>> nearby(
