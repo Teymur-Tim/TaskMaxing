@@ -9,6 +9,7 @@ import com.example.taskmaxing.model.dto.request.CreateUserRequest;
 import com.example.taskmaxing.model.dto.request.UpdateUserRequest;
 import com.example.taskmaxing.model.dto.response.UserResponse;
 import com.example.taskmaxing.model.entity.User;
+import com.example.taskmaxing.model.enums.Role;
 import com.example.taskmaxing.repository.RefreshTokenRepository;
 import com.example.taskmaxing.repository.UserRepository;
 import com.example.taskmaxing.secuirity.JwtService;
@@ -51,6 +52,8 @@ public class UserService {
         // Əvvəlcə şifrəni hashləyib obyektə set edirik
         user.setPassword(passwordEncoder.encode(createUserRequest.password()));
         user.setKarmaPoints(0L);
+        // Yeni istifadəçi default olaraq CLIENT rolu alır (admin sonradan ADMIN verə bilər).
+        user.getRoles().add(Role.CLIENT);
         // İndi isə bircə dəfə və birbaşa təhlükəsiz şəkildə bazaya yazırıq (Tək INSERT sorğusu)
         User savedUser = userRepository.save(user);
 

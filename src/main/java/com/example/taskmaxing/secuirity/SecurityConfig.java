@@ -43,6 +43,8 @@ public class SecurityConfig {
                         // 1. Yalnız real public endpointlər: register, login, refresh-token
                         .requestMatchers("/users/register", "/users/login", "/users/refresh-token")
                         .permitAll()
+                        // Admin paneli: yalnız ADMIN rolu (ROLE_ADMIN authority) çata bilər.
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/tasks/**").authenticated()
                         // 2. Qalan bütün sorğular mütləq token tələb edir! (məs: DELETE /users/me)
                         .anyRequest().authenticated()

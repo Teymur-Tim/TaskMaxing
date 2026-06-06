@@ -40,6 +40,10 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private boolean phoneVisible = true;
     private String password;
+    // Ban statusu: admin tərəfindən bloklanmış istifadəçi login edə bilmir və
+    // mövcud sessiyası növbəti sorğuda kəsilir (isEnabled=false qaytarır).
+    @Column(nullable = false)
+    private boolean banned = false;
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
     @Enumerated(EnumType.STRING)
@@ -86,6 +90,6 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true; // Hesab aktivdir
+        return !banned; // Ban olunmuş hesab deaktivdir — login/əməliyyat edə bilməz
     }
 }

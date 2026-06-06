@@ -184,6 +184,7 @@ public class TaskServiceImpl implements TaskService {
 
         // İş bitdi → tasker karma qazanır
         task.setStatus(TaskStatus.DONE);
+        task.setDoneAt(Instant.now()); // çat mesajlarının gec təmizlənməsi bu andan sayılır
 
         User tasker = task.getTasker();
         long current = tasker.getKarmaPoints() == null ? 0L : tasker.getKarmaPoints();

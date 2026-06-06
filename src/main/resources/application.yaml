@@ -18,4 +18,10 @@ spring:
 # JWT secret artıq koddan deyil, buradan (və ya JWT_SECRET env dəyişənindən) gəlir.
 # Prod-da mütləq JWT_SECRET env dəyişəni təyin et!
 jwt:
-  secret: ${JWT_SECRET}
+  secret: ${JWT_SECRET:}
+
+# Bu istifadəçi startup-da avtomatik ADMIN olur (AdminSeeder).
+# Boş = heç kim admin olmur. Öz username-ini bura yaz, sonra backend-i restart et.
+# (Və ya ADMIN_USERNAME env dəyişəni təyin et.)
+app:
+  admin-username: ${ADMIN_USERNAME:}

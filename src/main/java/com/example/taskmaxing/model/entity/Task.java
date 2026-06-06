@@ -25,6 +25,10 @@ public class Task {
     // planlaşdırılmış iş bu tapşırığı avtomatik silir (yeri boş yerə tutmasın).
     private Instant completedAt;
 
+    // Client işi təsdiqlədiyi (status DONE olduğu) an. Bir neçə gün sonra
+    // bu tapşırığın çat mesajları DB-dən təmizlənir (yer tutmasın — tapşırıq özü tarixçə kimi qalır).
+    private Instant doneAt;
+
     // GPS məlumatı (xəritə kitabxanası yox, sadəcə saxlanılır və Google Maps linki üçün istifadə olunur)
     private Double latitude;
     private Double longitude;

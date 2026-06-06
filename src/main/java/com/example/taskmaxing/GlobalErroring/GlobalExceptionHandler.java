@@ -5,6 +5,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -71,6 +72,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex) {
         return build(HttpStatus.UNAUTHORIZED, "Unauthorized", "İstifadəçi adı və ya şifrə yanlışdır!");
+    }
+
+    // 403 - hesab ban olunub (isEnabled=false) — login cəhdi zamanı
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<ErrorResponse> handleDisabled(DisabledException ex) {
+        return build(HttpStatus.FORBIDDEN, "Forbidden",
+                "Hesabınız bloklanıb. Administrator ilə əlaqə saxlayın.");
     }
 
     // 500 - qalan bütün gözlənilməz xətalar (daxili detalları client-ə sızdırmırıq)

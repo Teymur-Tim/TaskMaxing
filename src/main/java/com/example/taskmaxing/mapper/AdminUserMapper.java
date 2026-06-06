@@ -1,0 +1,20 @@
+package com.example.taskmaxing.mapper;
+
+import com.example.taskmaxing.model.dto.response.AdminUserResponse;
+import com.example.taskmaxing.model.entity.User;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+
+@Mapper(componentModel = "spring")
+public interface AdminUserMapper {
+
+    @Mapping(target = "ratingAverage", expression = "java(ratingAverage(user))")
+    AdminUserResponse toResponse(User user);
+
+    // UserMapper-dəki ilə eyni məntiq: orta reytinq, rəy yoxdursa null.
+    default Double ratingAverage(User user) {
+        long count = user.getRatingCount() == null ? 0L : user.getRatingCount();
+        long sum = user.getRatingSum() == null ? 0L : user.getRatingSum();
+        return count > 0 ? Math.round((double) sum / count * 10.0) / 10.0 : null;
+    }
+}
