@@ -9,7 +9,6 @@ public record CreateTaskRequest(
         String title,
         String description,
         BigDecimal budget,
-        // GPS (opsional). Verilərsə, düzgün diapazonda olmalıdır.
         @DecimalMin(value = "-90.0", message = "latitude -90 ilə 90 arası olmalıdır!")
         @DecimalMax(value = "90.0", message = "latitude -90 ilə 90 arası olmalıdır!")
         Double latitude,

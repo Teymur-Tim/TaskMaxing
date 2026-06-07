@@ -22,7 +22,7 @@ public interface TaskMapper {
 
     Task toEntity(CreateTaskRequest request);
 
-    // Bir istifadəçinin orta reytinqi (rəy yoxdursa null)
+
     default Double ratingAverage(User user) {
         if (user == null) return null;
         long count = user.getRatingCount() == null ? 0L : user.getRatingCount();
@@ -35,7 +35,6 @@ public interface TaskMapper {
         return user.getRatingCount();
     }
 
-    // Google Maps linkini qurur: koordinat varsa ona, yoxsa ünvana görə. Heç biri yoxdursa null.
     default String buildMapsUrl(Task task) {
         if (task.getLatitude() != null && task.getLongitude() != null) {
             return "https://www.google.com/maps/search/?api=1&query="

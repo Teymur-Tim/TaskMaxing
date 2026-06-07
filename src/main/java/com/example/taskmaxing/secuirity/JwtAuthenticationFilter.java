@@ -34,7 +34,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String path = request.getServletPath();
 
-        // 1. Açıq endpointləri filter birbaşa növbəti mərhələyə buraxır
         if (path.contains("/users/login") || path.contains("/users/register") || path.contains("/users/refresh")) {
             filterChain.doFilter(request, response);
             return;
@@ -47,7 +46,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        // TƏHLÜKƏSİZLİK SEYFİ: Kodu try-catch içinə alırıq, amma daxili Dependency qoşmuruq
+
         try {
             String jwt = authHeader.substring(7);
             String username = jwtService.extractUsername(jwt);
@@ -55,8 +54,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
 
-                // isEnabled() yoxlaması: ban olunmuş istifadəçi hələ etibarlı (15 dəq) token-ə
-                // sahib olsa belə, növbəti sorğuda authenticate olunmur -> 403.
                 if (jwtService.isTokenValid(jwt, userDetails) && userDetails.isEnabled()) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails,
@@ -68,7 +65,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
         } catch (Exception e) {
-            // Spring-i çökdürmürük; sadəcə log-a yazırıq (etibarsız/vaxtı keçmiş token = 403)
             log.warn("JWT filtrində token oxunarkən xəta baş verdi: {}", e.getMessage());
         }
 

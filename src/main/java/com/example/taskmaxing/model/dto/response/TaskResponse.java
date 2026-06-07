@@ -13,11 +13,8 @@ public record TaskResponse(Long id,
                            Double latitude,
                            Double longitude,
                            String address,
-                           // Tasker "tamamladım" dediyi an (təsdiq/expiry vaxtını UI hesablaması üçün)
                            Instant completedAt,
-                           // Tapşırığı yaradan client-in reytinqi (tasker götürməzdən əvvəl qiymətləndirsin)
                            Double clientRating,
                            Long clientRatingCount,
-                           // Tasker düyməyə basanda birbaşa açılacaq Google Maps linki (hazır gəlir)
                            String mapsUrl) {
 }

@@ -31,34 +31,30 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
-    private final AuthenticationProvider authenticationProvider; // Artıq bu ApplicationConfig-dən gələcək
+    private final AuthenticationProvider authenticationProvider;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
 
-                .csrf(AbstractHttpConfigurer::disable) // JWT üçün CSRF-i bağlayırıq
+                .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource())) // frontend üçün CORS
                 .authorizeHttpRequests(auth -> auth
-                        // 1. Yalnız real public endpointlər: register, login, refresh-token
                         .requestMatchers("/users/register", "/users/login", "/users/refresh-token")
                         .permitAll()
-                        // Admin paneli: yalnız ADMIN rolu (ROLE_ADMIN authority) çata bilər.
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/tasks/**").authenticated()
-                        // 2. Qalan bütün sorğular mütləq token tələb edir! (məs: DELETE /users/me)
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // Session yoxdur, ancaq JWT
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-                .authenticationProvider(authenticationProvider) // ApplicationConfig-dən gələn provayder
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class); // Bizim filter
+                .authenticationProvider(authenticationProvider)
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    // CORS: Vite dev server (5173/5174) backend-ə birbaşa sorğu ata bilsin deyə
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();

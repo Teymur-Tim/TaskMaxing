@@ -11,8 +11,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-// Tapşırıq daxili çat. Bütün endpointlər /tasks/** altındadır → SecurityConfig
-// onsuz da token tələb edir. İştirakçı yoxlanışı servisdə aparılır.
 @RestController
 @RequestMapping("/tasks/{taskId}/messages")
 @RequiredArgsConstructor
@@ -20,8 +18,6 @@ public class MessageController {
 
     private final MessageService messageService;
 
-    // GET /tasks/{taskId}/messages           -> bütün söhbət (ilk yükləmə)
-    // GET /tasks/{taskId}/messages?after=42  -> yalnız 42-dən sonrakılar (delta-polling)
     @GetMapping
     public ResponseEntity<List<MessageResponse>> getMessages(
             @PathVariable Long taskId,
@@ -33,7 +29,6 @@ public class MessageController {
         );
     }
 
-    // POST /tasks/{taskId}/messages -> yeni mesaj göndər
     @PostMapping
     public ResponseEntity<MessageResponse> sendMessage(
             @PathVariable Long taskId,

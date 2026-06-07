@@ -35,39 +35,31 @@ public class UserService {
     private RefreshTokenRepository refreshTokenRepository;
 
     public UserResponse createUser(CreateUserRequest createUserRequest) {
-        // Bazaya yazmadan əvvəl təkrarlanmanı yoxlayırıq ki, xam DB xətası client-ə getməsin
         if (userRepository.existsByUsername(createUserRequest.username())) {
             throw new ConflictException("Bu istifadəçi adı artıq mövcuddur!");
         }
         if (userRepository.existsByEmail(createUserRequest.email())) {
             throw new ConflictException("Bu email artıq qeydiyyatdan keçib!");
         }
-        // Bir nömrə ilə yalnız bir hesab: təkrar nömrə ilə qeydiyyatın qarşısını alırıq.
         if (userRepository.existsByPhoneNumber(createUserRequest.phoneNumber())) {
             throw new ConflictException("Bu telefon nömrəsi artıq qeydiyyatdan keçib!");
         }
 
         User user = userMapper.toEntity(createUserRequest);
 
-        // Əvvəlcə şifrəni hashləyib obyektə set edirik
         user.setPassword(passwordEncoder.encode(createUserRequest.password()));
         user.setKarmaPoints(0L);
-        // Yeni istifadəçi default olaraq CLIENT rolu alır (admin sonradan ADMIN verə bilər).
         user.getRoles().add(Role.CLIENT);
-        // İndi isə bircə dəfə və birbaşa təhlükəsiz şəkildə bazaya yazırıq (Tək INSERT sorğusu)
         User savedUser = userRepository.save(user);
 
         return userMapper.toResponse(savedUser);
     }
 
-    // Profil yenilənməsi: yalnız token-dəki istifadəçi öz məlumatlarını dəyişə bilər.
-    // Partial update — yalnız göndərilən (null olmayan) sahələr yenilənir.
     @Transactional
     public UserResponse updateProfile(String username, UpdateUserRequest request) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("İstifadəçi tapılmadı!"));
 
-        // username dəyişdirilirsə, başqasının istifadə etmədiyini yoxlayırıq
         if (request.username() != null && !request.username().equals(user.getUsername())) {
             if (userRepository.existsByUsername(request.username())) {
                 throw new ConflictException("Bu istifadəçi adı artıq mövcuddur!");
@@ -75,7 +67,6 @@ public class UserService {
             user.setUsername(request.username());
         }
 
-        // email dəyişdirilirsə, başqasının istifadə etmədiyini yoxlayırıq
         if (request.email() != null && !request.email().equals(user.getEmail())) {
             if (userRepository.existsByEmail(request.email())) {
                 throw new ConflictException("Bu email artıq qeydiyyatdan keçib!");
@@ -87,12 +78,10 @@ public class UserService {
             user.setBio(request.bio());
         }
 
-        // Profil şəkli: "" göndərilərsə şəkil silinir, null isə toxunulmur.
         if (request.avatar() != null) {
             user.setAvatar(request.avatar().isBlank() ? null : request.avatar());
         }
 
-        // Telefon nömrəsinin görünürlüyü (gizlət/göstər) — yalnız göndərildikdə dəyişir.
         if (request.phoneVisible() != null) {
             user.setPhoneVisible(request.phoneVisible());
         }
@@ -100,7 +89,6 @@ public class UserService {
         return userMapper.toResponse(userRepository.save(user));
     }
 
-    // Cari istifadəçinin profil məlumatları (token-dəki istifadəçi).
     @Transactional(readOnly = true)
     public UserResponse getCurrentUser(String username) {
         User user = userRepository.findByUsername(username)
@@ -108,21 +96,17 @@ public class UserService {
         return userMapper.toResponse(user);
     }
 
-    // Hər hansı istifadəçinin ictimai profili (başqasının reytinqinə/bio-suna baxmaq üçün).
-    // Email gizli saxlanılır — yalnız ad, bio, avatar, karma və reytinq qaytarılır.
     @Transactional(readOnly = true)
     public UserResponse getPublicProfile(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("İstifadəçi tapılmadı: " + username));
         UserResponse full = userMapper.toResponse(user);
-        // email həmişə gizli; telefon nömrəsi isə yalnız istifadəçi gizlətməyibsə (phoneVisible) göstərilir.
         String publicPhone = user.isPhoneVisible() ? full.phoneNumber() : null;
         return new UserResponse(
                 full.id(), full.username(), null, publicPhone, full.phoneVisible(), full.bio(),
                 full.karmaPoints(), full.avatar(), full.ratingAverage(), full.ratingCount());
     }
 
-    // Şifrə dəyişdirilməsi: əvvəlcə cari şifrə doğrulanır, sonra yeni şifrə hashlənib yazılır.
     @Transactional
     public void changePassword(String username, ChangePasswordRequest request) {
         User user = userRepository.findByUsername(username)
@@ -140,20 +124,16 @@ public class UserService {
         userRepository.save(user);
     }
 
-    // Hesabın soft-delete edilməsi: bazadan silinmir, @SoftDelete sayəsində "deleted = true" olur.
     @Transactional
     public void deleteAccount(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("İstifadəçi tapılmadı!"));
 
-        // Təhlükəsizlik: hesab bağlananda bütün aktiv refresh token-ləri ləğv edirik (real silinir).
         refreshTokenRepository.deleteByUser(user);
 
-        // @SoftDelete sayəsində bu delete əslində "UPDATE users SET deleted = true" sorğusuna çevrilir.
         userRepository.delete(user);
     }
 
-    // Leaderboard: istifadəçiləri karma xalına görə azalan sıra ilə qaytarır.
     @Transactional(readOnly = true)
     public List<UserResponse> getLeaderboard() {
         return userRepository.findAllByOrderByKarmaPointsDesc().stream()

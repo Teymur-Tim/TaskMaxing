@@ -16,18 +16,14 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
 
     boolean existsByTaskerAndStatusIn(User tasker, List<TaskStatus> statuses);
 
-    // Bir tasker-in eyni anda neçə aktiv (götürdüyü, hələ bitməmiş) işi olduğunu sayır
     long countByTaskerAndStatusIn(User tasker, List<TaskStatus> statuses);
 
     List<Task> findByTaskerIsNull();
 
-    // Söhbətlər siyahısı üçün: icraçısı təyin olunmuş (çatı olan) tapşırıqlar.
-    // Mənim yaratdıqlarım (client) və mənim götürdüklərim (tasker).
+
     List<Task> findByClientIdAndTaskerIsNotNull(Long clientId);
 
     List<Task> findByTaskerId(Long taskerId);
 
-    // Müəyyən statusda olub, verilmiş andan əvvəl o statusa düşmüş tapşırıqlar
-    // (köhnə, təsdiqlənməmiş COMPLETED taskları tapmaq üçün).
     List<Task> findByStatusAndCompletedAtBefore(TaskStatus status, Instant cutoff);
 }

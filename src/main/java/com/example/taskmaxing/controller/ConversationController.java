@@ -10,8 +10,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-// İştirak etdiyim söhbətlərin siyahısı (son mesajla). "Mesajlar" səhifəsi və
-// Navbar-dakı oxunmamış bildirişi bunu poll edir. /tasks/** altındadır → token tələb olunur.
 @RestController
 @RequiredArgsConstructor
 public class ConversationController {

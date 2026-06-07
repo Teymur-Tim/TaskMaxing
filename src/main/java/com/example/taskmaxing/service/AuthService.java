@@ -43,13 +43,11 @@ public class AuthService {
         var user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new ResourceNotFoundException("İstifadəçi tapılmadı"));
 
-        // 1. 15 dəqiqəlik Access Token generastiya edirik
+
         String accessToken = jwtService.generateAccessToken(user);
 
-        // 2. 7 günlük Refresh Token yaradırıq və bazaya yazırıq
         var refreshToken = refreshTokenService.createRefreshToken(user.getUsername());
 
-        // 3. Hər ikisini də DTO-ya qoyub qaytarırıq
         return AuthResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken.getToken())
@@ -60,15 +58,14 @@ public class AuthService {
         String requestRefreshToken = request.getRefreshToken();
 
         return refreshTokenService.findByToken(requestRefreshToken)
-                .map(refreshTokenService::verifyExpiration) // Vaxtı bitibmi yoxla
-                .map(RefreshToken::getUser) // Token-dən user-i götür
+                .map(refreshTokenService::verifyExpiration)
+                .map(RefreshToken::getUser)
                 .map(user -> {
-                    // Təzə access token yaradırıq
                     String newAccessToken = jwtService.generateAccessToken(user);
 
                     return AuthResponse.builder()
                             .accessToken(newAccessToken)
-                            .refreshToken(requestRefreshToken) // Mövcud refresh tokeni geri qaytarırıq
+                            .refreshToken(requestRefreshToken)
                             .build();
                 })
                 .orElseThrow(() -> new ResourceNotFoundException("Refresh token bazada tapılmadı!"));

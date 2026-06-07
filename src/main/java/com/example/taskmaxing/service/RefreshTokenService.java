@@ -20,25 +20,22 @@ public class RefreshTokenService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
 
-    // 1. İstifadəçi üçün yeni bir Refresh Token yaradır (və ya köhnəsini yeniləyir)
     @Transactional
     public RefreshToken createRefreshToken(String username) {
         var user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("İstifadəçi tapılmadı"));
 
-        // Eyni istifadəçinin köhnə tokeni varsa, bazadan silirik (təkrarlanma olmasın)
         refreshTokenRepository.deleteByUser(user);
 
         RefreshToken refreshToken = RefreshToken.builder()
                 .user(user)
-                .token(UUID.randomUUID().toString()) // Təhlükəsiz təsadüfi mətn (UUID)
-                .expiresAt(Instant.now().plusMillis(604800000)) // 7 Günlük ömür (milisaniyə ilə)
+                .token(UUID.randomUUID().toString())
+                .expiresAt(Instant.now().plusMillis(604800000))
                 .build();
 
         return refreshTokenRepository.save(refreshToken);
     }
 
-    // 2. Tokenin vaxtının bitib-bitmədiyini yoxlayır
     public RefreshToken verifyExpiration(RefreshToken token) {
         if (token.getExpiresAt().isBefore(Instant.now())) {
             refreshTokenRepository.delete(token);

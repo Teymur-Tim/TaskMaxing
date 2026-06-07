@@ -17,7 +17,6 @@ public class ReviewController {
 
     private final ReviewService reviewService;
 
-    // Tapşırığın iştirakçısı qarşı tərəf haqqında rəy yazır
     @PostMapping("/tasks/{taskId}/reviews")
     public ResponseEntity<ReviewResponse> create(
             @PathVariable Long taskId,
@@ -27,13 +26,11 @@ public class ReviewController {
         return ResponseEntity.ok(reviewService.createReview(taskId, authentication.getName(), request));
     }
 
-    // Bir tapşırığa aid bütün rəylər
     @GetMapping("/tasks/{taskId}/reviews")
     public ResponseEntity<List<ReviewResponse>> taskReviews(@PathVariable Long taskId) {
         return ResponseEntity.ok(reviewService.getTaskReviews(taskId));
     }
 
-    // Bir istifadəçi haqqında yazılmış bütün rəylər
     @GetMapping("/users/{username}/reviews")
     public ResponseEntity<List<ReviewResponse>> userReviews(@PathVariable String username) {
         return ResponseEntity.ok(reviewService.getUserReviews(username));

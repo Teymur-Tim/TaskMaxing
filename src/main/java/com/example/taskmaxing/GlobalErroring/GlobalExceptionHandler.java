@@ -17,7 +17,6 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // Bütün cavabları eyni formatda qurmaq üçün köməkçi metod
     private ResponseEntity<ErrorResponse> build(HttpStatus status, String error, String message) {
         ErrorResponse body = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
@@ -28,7 +27,6 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(body, status);
     }
 
-    // 400 - @Valid validation xətaları
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
         String message = ex.getBindingResult().getFieldErrors().stream()
@@ -37,51 +35,43 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, "Validation Failed", message);
     }
 
-    // 404 - resurs (user, task, token) tapılmadı
     @ExceptionHandler({ResourceNotFoundException.class, UsernameNotFoundException.class})
     public ResponseEntity<ErrorResponse> handleNotFound(RuntimeException ex) {
         return build(HttpStatus.NOT_FOUND, "Not Found", ex.getMessage());
     }
 
-    // 400 - client səhv məlumat göndərdi (məs: cari şifrə yanlışdır)
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ErrorResponse> handleBadRequest(BadRequestException ex) {
         return build(HttpStatus.BAD_REQUEST, "Bad Request", ex.getMessage());
     }
 
-    // 403 - autentifikasiya olunub, amma bu əməliyyata icazəsi yoxdur
     @ExceptionHandler(ForbiddenException.class)
     public ResponseEntity<ErrorResponse> handleForbidden(ForbiddenException ex) {
         return build(HttpStatus.FORBIDDEN, "Forbidden", ex.getMessage());
     }
 
-    // 409 - biznes qaydası pozuldu (təkrar user, artıq götürülmüş task və s.)
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<ErrorResponse> handleConflict(ConflictException ex) {
         return build(HttpStatus.CONFLICT, "Conflict", ex.getMessage());
     }
 
-    // 409 - bazanın hər hansı məhdudiyyəti pozulanda (xam SQL mesajını gizlədirik)
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex) {
         return build(HttpStatus.CONFLICT, "Conflict",
                 "Məlumat bazası məhdudiyyəti pozuldu.");
     }
 
-    // 401 - səhv istifadəçi adı və ya şifrə
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex) {
         return build(HttpStatus.UNAUTHORIZED, "Unauthorized", "İstifadəçi adı və ya şifrə yanlışdır!");
     }
 
-    // 403 - hesab ban olunub (isEnabled=false) — login cəhdi zamanı
     @ExceptionHandler(DisabledException.class)
     public ResponseEntity<ErrorResponse> handleDisabled(DisabledException ex) {
         return build(HttpStatus.FORBIDDEN, "Forbidden",
                 "Hesabınız bloklanıb. Administrator ilə əlaqə saxlayın.");
     }
 
-    // 500 - qalan bütün gözlənilməz xətalar (daxili detalları client-ə sızdırmırıq)
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
         return build(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error",

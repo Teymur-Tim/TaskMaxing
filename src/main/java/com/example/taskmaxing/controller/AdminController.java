@@ -11,8 +11,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-// Bütün endpointlər /admin/** altındadır və SecurityConfig-də hasRole("ADMIN")
-// ilə qorunur — yalnız ADMIN rolu olan istifadəçi çata bilər.
 @RestController
 @RequestMapping("/admin")
 @RequiredArgsConstructor
@@ -21,7 +19,6 @@ public class AdminController {
     private final AdminService adminService;
     private final ReportService reportService;
 
-    // --- İstifadəçi idarəetməsi ---
     @GetMapping("/users")
     public ResponseEntity<List<AdminUserResponse>> users() {
         return ResponseEntity.ok(adminService.listUsers());
@@ -43,13 +40,11 @@ public class AdminController {
         return ResponseEntity.noContent().build();
     }
 
-    // --- Şikayət (report) idarəetməsi ---
     @GetMapping("/reports")
     public ResponseEntity<List<ReportResponse>> reports() {
         return ResponseEntity.ok(reportService.getAllReports());
     }
 
-    // status query param: RESOLVED və ya DISMISSED.
     @PutMapping("/reports/{id}/status")
     public ResponseEntity<ReportResponse> updateReportStatus(
             @PathVariable Long id,

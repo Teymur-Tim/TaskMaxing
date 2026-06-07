@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 
-// İstifadəçi şikayəti: kim, kimi, nəyə görə report etdi.
 @Entity
 @Table(name = "reports")
 @Data
@@ -21,19 +20,14 @@ public class Report {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Şikayəti edən istifadəçi (stabil əlaqə id-si üçün).
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "reporter_id")
     private User reporter;
 
-    // Haqqında şikayət edilən istifadəçi.
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "reported_id")
     private User reported;
 
-    // Username-lərin "snapshot"-u: report anındakı adları saxlayırıq ki,
-    // istifadəçi sonradan silinsə/adını dəyişsə belə admin siyahıda kimi
-    // görəcəyini itirməsin (soft-delete olunmuş user-i lazy yükləmək problem yaradır).
     @Column(name = "reporter_username", nullable = false)
     private String reporterUsername;
 

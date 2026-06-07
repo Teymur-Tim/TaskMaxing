@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
-
+//istifade olunmurr!!!
 @Entity
 @Data
 public class Bid {

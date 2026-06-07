@@ -18,17 +18,15 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    // Secret artıq kodda hardcode deyil — application.yaml / JWT_SECRET env dəyişənindən gəlir.
+
     @Value("${jwt.secret}")
     private String secretKey;
 
-    // Access token lives 15 minutes; refresh token lives 7 days and is stored in the DB.
+
     private static final long ACCESS_TOKEN_EXPIRY_MS = 1000L * 60 * 15;
 
     public String generateAccessToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
-        // Rolları token-ə yazırıq ki, frontend admin panelini göstərib-göstərməməyi
-        // dərhal (əlavə sorğusuz) bilsin. "ROLE_" prefiksini atırıq: ["CLIENT","ADMIN"].
         claims.put("roles", userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .map(a -> a.replaceFirst("^ROLE_", ""))
@@ -76,9 +74,6 @@ public class JwtService {
     }
 
     private SecretKey getSignInKey() {
-        // Secret-i birbaşa UTF-8 bayt kimi götürürük (Base64 tələb olunmur, ona görə
-        // istənilən mətn olar). HS256 üçün açar ən azı 32 bayt (256 bit) olmalıdır,
-        // yəni JWT_SECRET ən azı 32 simvol uzunluğunda olmalıdır.
         return Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
     }
 }

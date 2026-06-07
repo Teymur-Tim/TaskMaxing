@@ -29,13 +29,11 @@ public class ReviewService {
     private final UserRepository userRepository;
     private final ReviewMapper reviewMapper;
 
-    // Tamamlanmış (DONE) tapşırığın iştirakçısı qarşı tərəf haqqında rəy yazır.
     @Transactional
     public ReviewResponse createReview(Long taskId, String reviewerUsername, CreateReviewRequest request) {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tapşırıq tapılmadı! ID: " + taskId));
 
-        // Rəy yalnız iş tam bitdikdən (DONE) sonra yazıla bilər
         if (task.getStatus() != TaskStatus.DONE) {
             throw new ConflictException("Yalnız tamamlanmış (DONE) tapşırığa rəy yazmaq olar!");
         }
@@ -46,7 +44,6 @@ public class ReviewService {
         User client = task.getClient();
         User tasker = task.getTasker();
 
-        // Rəyi yazan tapşırığın iştirakçısı olmalıdır; qarşı tərəf rəyin ünvanıdır.
         User receiver;
         if (client != null && client.getId().equals(reviewer.getId())) {
             receiver = tasker;
@@ -73,7 +70,6 @@ public class ReviewService {
         review.setCreatedAt(Instant.now());
         Review saved = reviewRepository.save(review);
 
-        // Qarşı tərəfin reytinq aqreqatını yeniləyirik
         long count = receiver.getRatingCount() == null ? 0L : receiver.getRatingCount();
         long sum = receiver.getRatingSum() == null ? 0L : receiver.getRatingSum();
         receiver.setRatingCount(count + 1);

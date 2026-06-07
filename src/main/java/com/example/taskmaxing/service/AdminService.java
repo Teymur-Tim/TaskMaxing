@@ -14,8 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-// Admin əməliyyatları: istifadəçi siyahısı, ban/unban, silmə.
-// Endpointlər SecurityConfig-də /admin/** -> hasRole("ADMIN") ilə qorunur.
+
 @Service
 @RequiredArgsConstructor
 public class AdminService {
@@ -38,7 +37,6 @@ public class AdminService {
             throw new BadRequestException("Admini ban edə bilməzsən!");
         }
         user.setBanned(true);
-        // Ban olunan istifadəçinin bütün refresh token-lərini silirik ki, yenidən token ala bilməsin.
         refreshTokenRepository.deleteByUser(user);
         return adminUserMapper.toResponse(userRepository.save(user));
     }
@@ -57,7 +55,6 @@ public class AdminService {
             throw new BadRequestException("Admin hesabını silə bilməzsən!");
         }
         refreshTokenRepository.deleteByUser(user);
-        // @SoftDelete sayəsində bu əslində "UPDATE users SET deleted = true" olur.
         userRepository.delete(user);
     }
 

@@ -23,21 +23,18 @@ import java.util.List;
 public class TaskController {
     private final TaskService taskService;
 
-    @PostMapping("/create") // URL-dən /{clientId} hissəsini tamamilə sildik!
+    @PostMapping("/create")
     public ResponseEntity<TaskResponse> createTask(
             @RequestBody CreateTaskRequest request,
-            Authentication authentication // Sistemdə olan aktiv istifadəçini avtomatik tutmaq üçün
+            Authentication authentication
     ) {
-        // Token-in içindən qeydiyyatdan keçmiş istifadəçinin username-ni çıxarırıq
         String currentUsername = authentication.getName();
 
-        // Servisə həmin username-i ötürürük
         TaskResponse response = taskService.createTask(request, currentUsername);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/open-tasks")
-//        @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<TaskResponse>> getAllOpenTasks() {
         return ResponseEntity.ok(taskService.getAllOpenTasks());
     }
@@ -57,7 +54,6 @@ public class TaskController {
         return ResponseEntity.ok(taskService.getAllTasks());
     }
 
-    // Tapşırığı redaktə et: yalnız sahibi və yalnız PENDING statusunda olduqda
     @PutMapping("/{id}")
     public ResponseEntity<TaskResponse> updateTask(
             @PathVariable Long id,
@@ -69,7 +65,6 @@ public class TaskController {
         return ResponseEntity.ok(response);
     }
 
-    // Tasker işi bitirdiyini bildirir → status COMPLETED (client təsdiqini gözləyir)
     @PutMapping("/{id}/complete")
     public ResponseEntity<TaskResponse> completeTask(
             @PathVariable Long id,
@@ -78,7 +73,6 @@ public class TaskController {
         return ResponseEntity.ok(taskService.completeTask(id, authentication.getName()));
     }
 
-    // Client işi təsdiqləyir → status DONE + tasker karma qazanır
     @PutMapping("/{id}/confirm")
     public ResponseEntity<TaskResponse> confirmTask(
             @PathVariable Long id,
@@ -87,7 +81,6 @@ public class TaskController {
         return ResponseEntity.ok(taskService.confirmTask(id, authentication.getName()));
     }
 
-    // Tasker götürdüyü işdən imtina edir → tapşırıq yenidən açıq (PENDING) olur
     @PutMapping("/{id}/cancel")
     public ResponseEntity<TaskResponse> cancelTask(
             @PathVariable Long id,
@@ -96,7 +89,6 @@ public class TaskController {
         return ResponseEntity.ok(taskService.cancelTask(id, authentication.getName()));
     }
 
-    // Client öz tapşırığını silir (icraçı aktiv işləmədiyi halda)
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTask(
             @PathVariable Long id,
@@ -106,7 +98,6 @@ public class TaskController {
         return ResponseEntity.noContent().build();
     }
 
-    // Yaxınlıqdakı açıq tapşırıqlar: tasker öz yerini (lat,lng) verir, radius (km) opsionaldır
     @GetMapping("/nearby")
     public ResponseEntity<List<NearbyTaskResponse>> nearby(
             @RequestParam double lat,

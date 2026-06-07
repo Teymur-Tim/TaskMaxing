@@ -9,7 +9,6 @@ import java.util.List;
 
 @Repository
 public interface ReportRepository extends JpaRepository<Report, Long> {
-    // Ən yeni şikayətlər yuxarıda.
     List<Report> findAllByOrderByCreatedAtDesc();
 
     List<Report> findByStatusOrderByCreatedAtDesc(ReportStatus status);

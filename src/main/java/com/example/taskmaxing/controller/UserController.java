@@ -42,13 +42,11 @@ public class UserController {
         return ResponseEntity.ok(authService.refresh(request));
     }
 
-    // Cari istifadəçinin profili (token-dəki istifadəçi) — avatar/email/bio daxil.
     @GetMapping("/me")
     public ResponseEntity<UserResponse> getMyProfile(Authentication authentication) {
         return ResponseEntity.ok(userService.getCurrentUser(authentication.getName()));
     }
 
-    // Yalnız öz profilini yeniləyə bilər (token-dəki istifadəçi). Partial update.
     @PutMapping("/me")
     public ResponseEntity<UserResponse> updateMyProfile(
             @Valid @RequestBody UpdateUserRequest request,
@@ -57,7 +55,6 @@ public class UserController {
         return ResponseEntity.ok(userService.updateProfile(authentication.getName(), request));
     }
 
-    // Şifrə dəyişdirilməsi: cari şifrə doğrulandıqdan sonra yeni şifrə yazılır.
     @PutMapping("/me/password")
     public ResponseEntity<Void> changePassword(
             @Valid @RequestBody ChangePasswordRequest request,
@@ -67,20 +64,18 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    // Leaderboard: ən çox karma toplayan istifadəçilər (rating sıralaması)
+
     @GetMapping("/leaderboard")
     public ResponseEntity<List<UserResponse>> leaderboard() {
         return ResponseEntity.ok(userService.getLeaderboard());
     }
 
-    // Hər hansı istifadəçinin ictimai profili (email-siz). "me"/"leaderboard" kimi
-    // literal yollar daha spesifik olduğu üçün bu {username} onları kölgələmir.
+
     @GetMapping("/{username}")
     public ResponseEntity<UserResponse> publicProfile(@PathVariable String username) {
         return ResponseEntity.ok(userService.getPublicProfile(username));
     }
 
-    // Yalnız öz hesabını silə bilər (token-dəki istifadəçi). Soft delete olunur.
     @DeleteMapping("/me")
     public ResponseEntity<Void> deleteMyAccount(Authentication authentication) {
         userService.deleteAccount(authentication.getName());

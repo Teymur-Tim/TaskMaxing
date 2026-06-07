@@ -23,19 +23,15 @@ import java.util.Comparator;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor // Lombok: Constructor injection üçün
+@RequiredArgsConstructor
 public class TaskServiceImpl implements TaskService {
 
-    // İş tam bitdikdə (client təsdiqi) tasker-ə verilən karma. İstənilən vaxt dəyişdirilə bilər.
     private static final long KARMA_REWARD = 10L;
 
-    // Bir tasker eyni anda maksimum neçə aktiv iş götürə bilər (saxtakarlığın qarşısını alır).
     private static final long MAX_ACTIVE_TASKS = 3L;
 
-    // Tasker tamamladıqdan sonra client bu müddət ərzində təsdiqləməsə, task silinir.
     private static final Duration COMPLETED_TASK_TTL = Duration.ofDays(1);
 
-    // Yer kürəsinin orta radiusu (km) — Haversine məsafə hesablaması üçün
     private static final double EARTH_RADIUS_KM = 6371.0;
 
     private final TaskRepository taskRepository;
@@ -44,22 +40,18 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public TaskResponse createTask(CreateTaskRequest request, String username) {
-        // 1. Bazadan ID ilə yox, token-dən gələn username ilə user-i tapırıq
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("İstifadəçi tapılmadı!"));
 
-        // Biznes Qaydası Yoxlanışı (Eyni anda həm Tasker həm Client olmamaq şərti)
-        // Əgər bu user-in hal-hazırda icra etdiyi (Tasker olduğu) aktiv bir işi varsa, yeni task yarada bilməz
         boolean isAlreadyTasker = taskRepository.existsByTaskerAndStatusIn(user, List.of(TaskStatus.IN_PROGRESS));
         if (isAlreadyTasker) {
             throw new ConflictException("Aktiv icra etdiyiniz iş var! Bitmədən yeni task yarada bilməzsiniz.");
         }
 
-        // 2. Taskı yaradırıq və useri ona bağlayırıq
         Task task = taskMapper.toEntity(request);
 
         task.setClient(user);
-        task.setStatus(TaskStatus.PENDING); // Bayaq düzəltdiyimiz default status
+        task.setStatus(TaskStatus.PENDING);
 
         return taskMapper.toResponse(taskRepository.save(task));
     }
@@ -87,9 +79,7 @@ public class TaskServiceImpl implements TaskService {
             throw new ConflictException("Öz yaratdığınız tapşırığı icraçı kimi qəbul edə bilməzsiniz!");
         }
 
-        // Saxtakarlığın qarşısını almaq üçün: eyni anda ən çox 3 aktiv iş götürmək olar.
-        // Aktiv = yalnız hazırda icra olunan (IN_PROGRESS). Tasker "tamamladım" deyən kimi
-        // (COMPLETED) slot boşalır ki, client təsdiqi gecikəndə belə yeni iş götürə bilsin.
+
         long activeTasks = taskRepository.countByTaskerAndStatusIn(
                 tasker, List.of(TaskStatus.IN_PROGRESS));
         if (activeTasks >= MAX_ACTIVE_TASKS) {
@@ -110,17 +100,14 @@ public class TaskServiceImpl implements TaskService {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tapşırıq tapılmadı! ID: " + taskId));
 
-        // Yalnız tapşırığı yaradan (sahibi) onu redaktə edə bilər
         if (!task.getClient().getUsername().equals(username)) {
             throw new ForbiddenException("Yalnız öz tapşırığınızı redaktə edə bilərsiniz!");
         }
 
-        // Bir icraçı götürdükdən sonra tapşırığın şərtlərini dəyişmək olmaz
         if (task.getStatus() != TaskStatus.PENDING) {
             throw new ConflictException("Yalnız hələ götürülməmiş (PENDING) tapşırıqları redaktə etmək olar!");
         }
 
-        // Partial update: yalnız göndərilən (null olmayan) sahələr yenilənir
         if (request.title() != null) {
             task.setTitle(request.title());
         }
@@ -149,18 +136,14 @@ public class TaskServiceImpl implements TaskService {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tapşırıq tapılmadı! ID: " + taskId));
 
-        // Yalnız tapşırığı icra edən (tasker) "tamamladım" deyə bilər
         if (task.getTasker() == null || !task.getTasker().getUsername().equals(username)) {
             throw new ForbiddenException("Yalnız tapşırığı icra edən (tasker) onu tamamlaya bilər!");
         }
 
-        // Yalnız icrada olan iş tamamlana bilər
         if (task.getStatus() != TaskStatus.IN_PROGRESS) {
             throw new ConflictException("Yalnız icrada (IN_PROGRESS) olan tapşırığı tamamlamaq olar!");
         }
 
-        // Karma hələ verilmir — client təsdiqini gözləyirik.
-        // Tamamlanma anını qeyd edirik ki, təsdiq gecikərsə avtomatik silinə bilsin.
         task.setStatus(TaskStatus.COMPLETED);
         task.setCompletedAt(Instant.now());
         return taskMapper.toResponse(taskRepository.save(task));
@@ -172,20 +155,16 @@ public class TaskServiceImpl implements TaskService {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tapşırıq tapılmadı! ID: " + taskId));
 
-        // Yalnız tapşırığı yaradan (client) işin bitdiyini təsdiq edə bilər
         if (!task.getClient().getUsername().equals(username)) {
             throw new ForbiddenException("Yalnız tapşırığı yaradan (client) onu təsdiq edə bilər!");
         }
 
-        // Yalnız tasker-in tamamladığı (COMPLETED) iş təsdiqlənə bilər
         if (task.getStatus() != TaskStatus.COMPLETED) {
             throw new ConflictException("Yalnız tasker tərəfindən tamamlanmış (COMPLETED) tapşırığı təsdiq etmək olar!");
         }
 
-        // İş bitdi → tasker karma qazanır
         task.setStatus(TaskStatus.DONE);
-        task.setDoneAt(Instant.now()); // çat mesajlarının gec təmizlənməsi bu andan sayılır
-
+        task.setDoneAt(Instant.now());
         User tasker = task.getTasker();
         long current = tasker.getKarmaPoints() == null ? 0L : tasker.getKarmaPoints();
         tasker.setKarmaPoints(current + KARMA_REWARD);
@@ -200,17 +179,14 @@ public class TaskServiceImpl implements TaskService {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tapşırıq tapılmadı! ID: " + taskId));
 
-        // Yalnız işi götürən (tasker) ondan imtina edə bilər
         if (task.getTasker() == null || !task.getTasker().getUsername().equals(username)) {
             throw new ForbiddenException("Yalnız tapşırığı götürən (tasker) ondan imtina edə bilər!");
         }
 
-        // Yalnız icrada olan işdən imtina etmək olar (tamamlandıqdan/təsdiqləndikdən sonra yox)
         if (task.getStatus() != TaskStatus.IN_PROGRESS) {
             throw new ConflictException("Yalnız icrada (IN_PROGRESS) olan tapşırıqdan imtina etmək olar!");
         }
 
-        // İmtina: tapşırıq icraçısız qalır və yenidən açıq (PENDING) olur ki, başqası götürə bilsin
         task.setTasker(null);
         task.setStatus(TaskStatus.PENDING);
         return taskMapper.toResponse(taskRepository.save(task));
@@ -222,14 +198,10 @@ public class TaskServiceImpl implements TaskService {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tapşırıq tapılmadı! ID: " + taskId));
 
-        // Yalnız tapşırığı yaradan (client) onu silə bilər
         if (!task.getClient().getUsername().equals(username)) {
             throw new ForbiddenException("Yalnız öz tapşırığınızı silə bilərsiniz!");
         }
 
-        // Yalnız hələ icraya başlanmamış (PENDING) və ya ləğv edilmiş (CANCELLED) tapşırığı
-        // silmək olar. İcrada olan (IN_PROGRESS/COMPLETED) və ya bitmiş (DONE — rəyləri saxlayır)
-        // tapşırıqlar silinmir.
         if (task.getStatus() != TaskStatus.PENDING && task.getStatus() != TaskStatus.CANCELLED) {
             throw new ConflictException(
                     "Yalnız hələ icraya başlanmamış (PENDING) və ya ləğv edilmiş tapşırığı silmək olar! " +
@@ -242,7 +214,6 @@ public class TaskServiceImpl implements TaskService {
     @Transactional
     @Override
     public void deleteStaleCompletedTasks() {
-        // Tasker tamamlayıb, amma client TTL müddətində təsdiqləməyib → tapşırığı silirik.
         Instant cutoff = Instant.now().minus(COMPLETED_TASK_TTL);
         List<Task> stale = taskRepository.findByStatusAndCompletedAtBefore(TaskStatus.COMPLETED, cutoff);
         if (!stale.isEmpty()) {
@@ -253,10 +224,8 @@ public class TaskServiceImpl implements TaskService {
     @Transactional(readOnly = true)
     @Override
     public List<TaskResponse> getAllOpenTasks() {
-        // 1. Bazadan icraçısı olmayan taskları çəkirik
         List<Task> openTasks = taskRepository.findByTaskerIsNull();
 
-        // 2. Stream və mapper istifadə edərək Entity-ləri Response DTO-ya çeviririk
         return openTasks.stream()
                 .map(taskMapper::toResponse)
                 .toList();
@@ -266,23 +235,17 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public List<NearbyTaskResponse> getNearbyOpenTasks(double latitude, double longitude, double radiusKm) {
         return taskRepository.findByTaskerIsNull().stream()
-                // yalnız koordinatı olan açıq tapşırıqlar
                 .filter(t -> t.getLatitude() != null && t.getLongitude() != null)
-                // hər biri üçün məsafəni hesabla
                 .map(t -> {
                     double distance = haversineKm(latitude, longitude, t.getLatitude(), t.getLongitude());
-                    // 2 onluğa yuvarlaqlaşdırırıq (məs: 2.34 km)
                     double rounded = Math.round(distance * 100.0) / 100.0;
                     return new NearbyTaskResponse(taskMapper.toResponse(t), rounded);
                 })
-                // radius xaricindəkiləri at
                 .filter(n -> n.distanceKm() <= radiusKm)
-                // ən yaxından ən uzağa sırala
                 .sorted(Comparator.comparingDouble(NearbyTaskResponse::distanceKm))
                 .toList();
     }
 
-    // İki coğrafi nöqtə arasındakı məsafə (km) — Haversine düsturu
     private double haversineKm(double lat1, double lon1, double lat2, double lon2) {
         double dLat = Math.toRadians(lat2 - lat1);
         double dLon = Math.toRadians(lon2 - lon1);

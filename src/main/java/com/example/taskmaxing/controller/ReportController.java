@@ -19,7 +19,6 @@ public class ReportController {
 
     private final ReportService reportService;
 
-    // İstənilən login olmuş istifadəçi başqa bir istifadəçini report edir.
     @PostMapping
     public ResponseEntity<ReportResponse> create(
             @Valid @RequestBody CreateReportRequest request,

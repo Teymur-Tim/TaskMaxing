@@ -24,7 +24,6 @@ public class ReportService {
     private final UserRepository userRepository;
     private final ReportMapper reportMapper;
 
-    // İstənilən login olmuş istifadəçi başqasını report edə bilər.
     @Transactional
     public ReportResponse createReport(String reporterUsername, CreateReportRequest request) {
         User reporter = userRepository.findByUsername(reporterUsername)
@@ -49,7 +48,6 @@ public class ReportService {
         return reportMapper.toResponse(reportRepository.save(report));
     }
 
-    // Admin: bütün şikayətlər, ən yenidən köhnəyə.
     @Transactional(readOnly = true)
     public List<ReportResponse> getAllReports() {
         return reportRepository.findAllByOrderByCreatedAtDesc().stream()
@@ -57,7 +55,6 @@ public class ReportService {
                 .toList();
     }
 
-    // Admin: şikayətin statusunu dəyişir (RESOLVED / DISMISSED).
     @Transactional
     public ReportResponse updateStatus(Long id, ReportStatus status) {
         Report report = reportRepository.findById(id)

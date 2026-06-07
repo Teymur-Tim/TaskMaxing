@@ -11,7 +11,6 @@ public interface AdminUserMapper {
     @Mapping(target = "ratingAverage", expression = "java(ratingAverage(user))")
     AdminUserResponse toResponse(User user);
 
-    // UserMapper-dəki ilə eyni məntiq: orta reytinq, rəy yoxdursa null.
     default Double ratingAverage(User user) {
         long count = user.getRatingCount() == null ? 0L : user.getRatingCount();
         long sum = user.getRatingSum() == null ? 0L : user.getRatingSum();

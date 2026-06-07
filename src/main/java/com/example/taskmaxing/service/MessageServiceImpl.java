@@ -29,9 +29,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class MessageServiceImpl implements MessageService {
 
-    // İş bitdikdən (DONE) bu müddət sonra çat mesajları DB-dən silinir. Tapşırıq
-    // özü tarixçə kimi qalır. (Sonra serverdə təhlükəsizlik üçün saxlamaq istəsən,
-    // bu dəyəri artır və ya təmizləməni söndür.)
     private static final Duration MESSAGE_RETENTION_AFTER_DONE = Duration.ofDays(3);
 
     private final MessageRepository messageRepository;
@@ -49,7 +46,6 @@ public class MessageServiceImpl implements MessageService {
 
         validateParticipant(task, user);
 
-        // afterId verilibsə yalnız yeni mesajlar (delta), yoxsa bütün söhbət.
         List<Message> messages = (afterId != null)
                 ? messageRepository.findByTaskIdAndIdGreaterThanOrderByIdAsc(taskId, afterId)
                 : messageRepository.findByTaskIdOrderByIdAsc(taskId);
@@ -82,8 +78,6 @@ public class MessageServiceImpl implements MessageService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("İstifadəçi tapılmadı: " + username));
 
-        // İştirak etdiyim, icraçısı olan tapşırıqlar: yaratdıqlarım + götürdüklərim.
-        // LinkedHashMap ilə təkrarları (id-yə görə) atırıq, sıra qorunur.
         Map<Long, Task> tasks = new LinkedHashMap<>();
         taskRepository.findByClientIdAndTaskerIsNotNull(user.getId())
                 .forEach(t -> tasks.put(t.getId(), t));
@@ -111,7 +105,6 @@ public class MessageServiceImpl implements MessageService {
             ));
         }
 
-        // Ən son yazışılan yuxarıda; mesajı olmayanlar (null) ən sonda.
         conversations.sort(Comparator.comparing(
                 ConversationResponse::lastCreatedAt,
                 Comparator.nullsLast(Comparator.reverseOrder())
@@ -126,8 +119,6 @@ public class MessageServiceImpl implements MessageService {
         messageRepository.deleteByTask_StatusAndTask_DoneAtBefore(TaskStatus.DONE, cutoff);
     }
 
-    // Çat yalnız iki nəfərlikdir: tapşırığın client-i və tasker-i. İcraçı təyin
-    // olunana qədər söhbət açılmır; kənar şəxs nə oxuya, nə yaza bilər.
     private void validateParticipant(Task task, User user) {
         if (task.getTasker() == null) {
             throw new ForbiddenException("İcraçı təyin olunana qədər bu tapşırıqda söhbət başlamır.");

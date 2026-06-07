@@ -27,7 +27,6 @@ public class ApplicationConfig {
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
-        // UserDetailsService-i birbaşa konstruktorun içinə ötürürük, əlavə metoda ehtiyac yoxdur
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService());
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;

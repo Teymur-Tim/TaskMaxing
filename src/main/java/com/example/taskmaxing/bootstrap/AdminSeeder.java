@@ -10,9 +10,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-// Startup-da application.yaml-dakı "app.admin-username" istifadəçisinə ADMIN rolu verir.
-// İdempotentdir: artıq admindirsə heç nə etmir. Boş olarsa atlayır.
-// İstifadə: normal qeydiyyatdan keç -> username-i config-ə yaz -> backend-i restart et.
+
 @Component
 @RequiredArgsConstructor
 @Slf4j
